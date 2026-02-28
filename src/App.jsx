@@ -114,35 +114,43 @@ const REWARD_ITEMS = [
   { id:"key_to_city",     name:"The Key to the City", category:"item",   value:0,   keywords:[], note:"+2 influence while carrying · +2 XP from all sources · Can be picked up if bearer is knocked out", info:"A symbol of civic honour. Others covet it greatly." },
   { id:"luteivarius",     name:"Luteivarius",         category:"item",   value:100, keywords:[], note:"While playing: friendlies within 8\" get +1 move, +1 melee attack, +1 HP. No attack/spell actions while playing. Undead unaffected. Playing requires no action.", info:"A magnificent instrument whose music stirs the soul." },
   { id:"heart_mountain",  name:"Heart of the Mountain",category:"item",  value:100, keywords:[], note:"+1 influence while carrying", info:"A warm stone that pulses like a second heart." },
-  { id:"dunder_honey",    name:"Dunder Honey",        category:"item",   value:0,   keywords:[], note:"Feed to one character: 8 damage unarmed, gains Bulky augment, +7 HP", info:"Thick amber honey humming with unnatural strength." },
+  { id:"dunder_honey",    name:"Gambrinus Stout",     category:"item",   value:0,   keywords:[], note:"Feed to one character: 8 damage unarmed, gains Bulky augment, +7 HP", info:"A potent brew of legendary strength. Those who drink it are never quite the same." },
   { id:"brannigan_culverin",name:"Brannigan Culverin",category:"item",   value:75,  keywords:[], note:"See Cannon rules.", info:"A compact cannon of the Brannigan arsenal." },
 ];
 
 const AUGMENTS = [
-  { id:"bulky",    name:"Bulky",    cost:5,  spellcaster:null, effect:"+3 HP · +1 to attack rolls · Ranged attacks against this character get +1 to hit." },
+  { id:"bulky",    name:"Bulky",    cost:5,  spellcaster:null, effect:"+3 HP · +1 to melee attack rolls · Ranged attacks against this character get +1 to hit." },
   { id:"nimble",   name:"Nimble",   cost:0,  spellcaster:null, effect:"Half HP (rounded up) · +1\" movement · −1 to ranged attack rolls against this character · +1 to Ambush rolls." },
   { id:"sorcerer", name:"Sorcerer", cost:10, spellcaster:"sorcerer", effect:"No casting item needed. Imbue 1 spell for +1 on cast rolls for that spell. Access to Quicken." },
   { id:"witch",    name:"Witch",    cost:10, spellcaster:"witch",    effect:"No casting item needed. Imbue 1 spell for +1 on cast rolls for that spell. Access to Life Drain." },
 ];
 
 const SPELLS = [
+  // ── STANDARD SPELLS ──
   { id:"ice_bolt",           name:"Ice Bolt",           diff:"4+", range:'6"',      dmg:3,    cost:5,  for:"all",      effect:"Slows target's movement by 2\" until caster's next turn." },
   { id:"fire_bolt",          name:"Fire Bolt",           diff:"4+", range:'8"',      dmg:3,    cost:5,  for:"all",      effect:"Deals an additional 1 damage over d3 turns." },
   { id:"healing_word",       name:"Healing Word",        diff:"—",  range:'6"',      dmg:null, cost:5,  for:"all",      effect:"Heals the target for 1d3." },
-  { id:"sleep",              name:"Sleep",               diff:"5+", range:'4"',      dmg:null, cost:10, for:"all",      effect:"Target sleeps until caster's next turn or until damaged." },
-  { id:"haste",              name:"Haste",               diff:"—",  range:"Self",    dmg:null, cost:10, for:"all",      effect:"Target gets an extra action and +1d3\" movement until end of turn. Once per activation." },
-  { id:"gust",               name:"Gust",                diff:"—",  range:'3" AoE',  dmg:null, cost:5,  for:"all",      effect:"Push or pull all characters within 3\" by 2\". See keyword Fall." },
   { id:"silence",            name:"Silence",             diff:"4+", range:'6"',      dmg:null, cost:5,  for:"all",      effect:"Target can't cast spells until next turn. On fail: +1 to target's next cast difficulty." },
   { id:"barkskin",           name:"Barkskin",            diff:"—",  range:'4"',      dmg:null, cost:5,  for:"all",      effect:"Target gains +2 armor until end of turn." },
   { id:"grasping_roots",     name:"Grasping Roots",      diff:"4+", range:'4"',      dmg:null, cost:5,  for:"all",      effect:"Target can't use move actions until next turn." },
   { id:"curse",              name:"Curse",               diff:"—",  range:'6"',      dmg:1,    cost:5,  for:"all",      effect:"Target takes 1 damage at start of each round for 1d6 rounds." },
-  { id:"protective_barrier", name:"Protective Barrier",  diff:"—",  range:'6"',      dmg:null, cost:10, for:"all",      effect:"Place a 4\" marker — characters inside take −2 damage from ranged attacks. Requires Staff." },
   { id:"force_lance",        name:"Force Lance",         diff:"3+", range:'6"',      dmg:2,    cost:10, for:"all",      effect:"Push target 2\" in any direction. Damage reduced by 1 per point of target's armor." },
-  { id:"blink",              name:"Blink",               diff:"—",  range:'6"',      dmg:null, cost:10, for:"all",      effect:"Teleport to any visible location within 6\". Once per activation." },
   { id:"penance",            name:"Penance",             diff:"—",  range:'6"',      dmg:null, cost:5,  for:"all",      effect:"Remove all negative effects from target. +1 to attack rolls until next turn. Requires title 'Priest'." },
+  { id:"blind",              name:"Blind",               diff:"—",  range:'8"',      dmg:null, cost:5,  for:"all",      effect:"Target receives −2 to all attack rolls until caster's next turn." },
   { id:"life_drain",         name:"Life Drain",          diff:"2+", range:'4"',      dmg:null, cost:5,  for:"witch",    effect:"Drain 1d3 health from the target." },
-  { id:"quicken",            name:"Quicken",             diff:"—",  range:"Self",    dmg:null, cost:5,  for:"sorcerer", effect:"Replicate the next spell cast this activation." },
+  { id:"manifest",           name:"Manifest",            diff:"—",  range:"Self",    dmg:null, cost:5,  for:"sorcerer", effect:"The next spell cast this activation automatically succeeds and gains +2\" range." },
   { id:"necrotic_bolt",      name:"Necrotic Bolt",       diff:"4+", range:'6"',      dmg:3,    cost:5,  for:"undead",   effect:"Gruesome — a knocked-out target receives −2 to their injury roll." },
+  // ── LIBRARY TOMES ──
+  { id:"sleep",              name:"Sleep",               diff:"5+", range:'4"',      dmg:null, cost:10, for:"all",      tome:true, rarity:6,  effect:"Target sleeps until caster's next turn or until damaged." },
+  { id:"blight",             name:"Blight",              diff:"—",  range:'6"',      dmg:1,    cost:5,  for:"all",      tome:true, rarity:6,  effect:"Target takes 1 damage and cannot be healed for d3 turns." },
+  { id:"protective_barrier", name:"Protective Barrier",  diff:"—",  range:'6"',      dmg:null, cost:10, for:"all",      tome:true, rarity:7,  effect:"Place a 4\" marker — characters inside take −2 damage from ranged attacks. Requires Staff." },
+  { id:"blink",              name:"Blink",               diff:"—",  range:'6"',      dmg:null, cost:10, for:"all",      tome:true, rarity:7,  effect:"Teleport to any visible location within 6\". Once per activation." },
+  { id:"chain_lightning",    name:"Chain Lightning",     diff:"4+", range:'6"',      dmg:2,    cost:10, for:"all",      tome:true, rarity:7,  effect:"Deals 2 damage to target, then jumps to every character within 2\" for 1 damage." },
+  { id:"dread",              name:"Dread",               diff:"—",  range:'4" AoE',  dmg:null, cost:10, for:"all",      tome:true, rarity:7,  effect:"All enemies within 4\" of the target must use their next movement action to move away." },
+  { id:"gust",               name:"Gust",                diff:"—",  range:'3" AoE',  dmg:null, cost:5,  for:"all",      tome:true, rarity:7,  effect:"Push or pull all characters within 3\" of the caster by 3\". See keyword Fall." },
+  { id:"haste",              name:"Haste",               diff:"—",  range:"Self",    dmg:null, cost:10, for:"all",      tome:true, rarity:8,  effect:"Target gets an extra action and +1d3\" movement until end of turn. Once per activation." },
+  { id:"entomb",             name:"Entomb",              diff:"—",  range:'6"',      dmg:null, cost:10, for:"all",      tome:true, rarity:10, effect:"Target takes 2 damage for each point of armor they have." },
+  { id:"paranoia",           name:"Paranoia",            diff:"—",  range:'6"',      dmg:null, cost:10, for:"all",      tome:true, rarity:11, effect:"Target must spend their next activation attacking the nearest character, friend or foe." },
 ];
 
 const KEYWORDS = {
@@ -329,7 +337,7 @@ const TALENTS = {
   undead: {
     name:"Undead", icon:"💀", undeadOnly:true, tiers:[
       [
-        { id:"reise",           name:"Reise",            desc:"+1 to Rise Again rolls" },
+        { id:"reise",           name:"Reise",            desc:"+1 to Rise Again rolls (4+ instead of 5+)" },
         { id:"big_boned",       name:"Big Boned",        desc:"+5 health" },
         { id:"swift_boned",     name:"Swift Boned",      desc:"+1\" movement" },
         { id:"hollow",          name:"Hollow",           desc:"Ranged attacks against this character get −1 to attack rolls" },
@@ -347,11 +355,11 @@ const TALENTS = {
         { id:"huge_boned",      name:"Huge Boned",       desc:"+10 health" },
         { id:"warlock",         name:"Warlock",          desc:"Increase range and damage of Necrotic Bolt by 2" },
       ],[
-        { id:"glory",           name:"Glory",            desc:"Sacrifice this character for 1 influence" },
-        { id:"greed",           name:"Greed",            desc:"Sacrifice this character for 6 gems" },
-        { id:"strength_sac",    name:"Strength",         desc:"Sacrifice this character to give your leader 12 bonus health" },
-        { id:"rage_sac",        name:"Rage",             desc:"Sacrifice this character to give your leader +2 to all attack rolls" },
-        { id:"mercy",           name:"Mercy",            desc:"Spare this character — they get +1 to Rise Again rolls" },
+        { id:"glory",           name:"Glory",            desc:"Sacrifice this character — company gains 1 influence", sacrifice:true },
+        { id:"greed",           name:"Greed",            desc:"Sacrifice this character for 6 gems", sacrifice:true },
+        { id:"enthrall",        name:"Enthrall",         desc:"Sacrifice this character — leader gains 1 additional talent point", sacrifice:true },
+        { id:"rage_sac",        name:"Rage",             desc:"Sacrifice this character — leader gets +2 to all attack rolls until end of scenario", sacrifice:true },
+        { id:"mercy",           name:"Mercy",            desc:"Spare this character — they get +1 to Rise Again rolls (4+ instead of 5+)", sacrifice:false },
       ],
     ],
   },
@@ -772,6 +780,9 @@ body{
 .mem-hit{color:var(--txt-d);font-size:.68rem;}
 .mem-hit.hit-good{color:#6a9a4a;border-color:rgba(106,154,74,.4);}
 .mem-hit.hit-bad{color:#c44c22;border-color:rgba(196,76,34,.4);}
+.mem-bulky-warn{color:#c44c22;font-size:.65rem;border-color:rgba(196,76,34,.4);}
+.sac-btn{background:rgba(100,30,30,.4);border:1px solid rgba(160,50,50,.5);color:#c06060;border-radius:4px;width:22px;height:22px;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+.sac-btn:hover{background:rgba(160,50,50,.5);color:#e08080;border-color:#c06060;}
 .mem-cost{
   font-family:'Cinzel',serif;
   font-size:.8rem;
@@ -1594,9 +1605,10 @@ body{
 .armory-modal{background:var(--s2);border:1px solid var(--border-l);border-radius:12px;padding:1.4rem;max-width:700px;width:92vw;max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:.75rem;}
 .armory-modal-sub{font-size:.78rem;color:var(--txt-d);}
 .armory-housing-badge{font-family:'Cinzel',serif;font-size:.72rem;color:var(--gold);background:rgba(200,149,42,.1);border:1px solid var(--gold-d);border-radius:4px;padding:.25rem .6rem;display:inline-block;}
-.armory-section-tabs{display:flex;gap:.4rem;margin-bottom:.5rem;}
+.armory-section-tabs{display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap;}
 .ast-btn{font-family:'Cinzel',serif;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;padding:.35rem .75rem;border:1px solid var(--border-l);background:var(--surface);color:var(--txt-d);border-radius:5px;cursor:pointer;transition:all .15s;}
 .ast-btn.active{background:rgba(200,149,42,.12);border-color:var(--gold-d);color:var(--gold);}
+.inline-armory{margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);}
 .armory-list{display:flex;flex-direction:column;gap:.4rem;}
 .armory-item{display:flex;align-items:flex-start;gap:.6rem;padding:.5rem .65rem;background:var(--surface);border:1px solid var(--border);border-radius:7px;transition:all .15s;}
 .armory-item.ai-owned{border-color:var(--gold-d);background:rgba(200,149,42,.06);}
@@ -1673,9 +1685,11 @@ body{
 .rewards-section-head{font-family:'Cinzel',serif;font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:var(--gold-d);margin:.85rem 0 .4rem;padding-bottom:.25rem;border-bottom:1px solid var(--border);}
 .rewards-section-head:first-child{margin-top:0;}
 .title-card{background:var(--s2);border:1px solid rgba(200,149,42,.25);border-radius:8px;padding:.65rem .85rem;display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;transition:all .15s;}
-.title-card:hover:not(.tc-owned){border-color:var(--gold-d);background:var(--s3);}
+.title-card:hover:not(.tc-owned):not(.tc-locked){border-color:var(--gold-d);background:var(--s3);}
+.title-card.tc-removable:hover{border-color:#c44c22;background:rgba(196,76,34,.08);}
 .title-card.tc-owned{border-color:var(--gold);background:linear-gradient(135deg,rgba(200,149,42,.15),rgba(200,149,42,.04));}
-.title-card.tc-locked{cursor:default;}
+.title-card.tc-locked{cursor:default;opacity:.85;}
+.tc-remove-badge{font-size:.62rem;color:#c44c22;background:rgba(196,76,34,.1);border:1px solid rgba(196,76,34,.3);border-radius:3px;padding:.05rem .3rem;margin-left:auto;font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.05em;}
 .tc-inf{display:flex;flex-direction:column;align-items:center;gap:.1rem;flex-shrink:0;background:var(--surface);border:1px solid rgba(200,149,42,.3);border-radius:6px;padding:.3rem .4rem;min-width:34px;}
 .tc-inf-num{font-family:'Cinzel',serif;font-size:.9rem;font-weight:700;color:var(--gold-d);}
 .tc-inf-lbl{font-family:'Cinzel',serif;font-size:.44rem;text-transform:uppercase;letter-spacing:.1em;color:var(--txt-d);}
@@ -1846,12 +1860,15 @@ const TALENT_HIT = {
   far_away:       { ranged: +1 },
 };
 
-function getHitBonus(m, stash, type) {
+function getHitBonus(m, stash, type, allMembers) {
   let bonus = 0;
   const talentList = Object.values(m.talents ?? {}).filter(Boolean);
 
   // Bulky augment or Bulk talent: +1 melee attack rolls
   if (type === "melee" && (m.augmentId === "bulky" || talentList.includes("bulk"))) bonus += 1;
+
+  // Rage sacrifice: leader gets +2 to all attack rolls (flagged via m.rageSacBonus)
+  if (m.isLeader && m.rageSacBonus) bonus += 2;
 
   // From equipped items
   allEquipped(m).forEach(uid => {
@@ -1901,6 +1918,17 @@ function getHitBonus(m, stash, type) {
 function getHitStr(m, stash, type) {
   const bonus = getHitBonus(m, stash, type);
   const target = Math.max(2, Math.min(6, 4 - bonus));
+  return target + "+";
+}
+
+// Rise Again roll: base 5+, reise gives +1 (→4+), mercy gives +1 (→4+), both together →3+
+function getRiseAgainStr(m) {
+  if (m.raceId !== "undead") return null;
+  const talentList = Object.values(m.talents ?? {}).filter(Boolean);
+  let bonus = 0;
+  if (talentList.includes("reise")) bonus += 1;
+  if (talentList.includes("mercy")) bonus += 1;
+  const target = Math.max(2, Math.min(6, 5 - bonus));
   return target + "+";
 }
 
@@ -1959,7 +1987,7 @@ function getMinionCost(type, activeFaction) {
 }
 
 function getTalentPoints(member) {
-  const available = Math.max(0, getLevel(member.xp ?? 0) - 1) + (member.isLeader ? 1 : 0);
+  const available = Math.max(0, getLevel(member.xp ?? 0) - 1) + (member.isLeader ? 1 : 0) + (member.bonusTalentPoints ?? 0);
   const spent = Object.values(member.talents ?? {}).filter(Boolean).length;
   return { available, spent, remaining: available - spent };
 }
@@ -2004,11 +2032,12 @@ function FactionBanner({ members }) {
 }
 
 // ─── ARMORY PANEL ─── (Company-level inventory: buy, market, receive rewards)
-function ArmoryPanel({ stash, setStash, remaining, members }) {
+function ArmoryPanel({ stash, setStash, remaining, members, update }) {
   const [filter, setFilter] = useState("all");
   const [mktFilter, setMktFilter] = useState("all");
   const [rwdFilter, setRwdFilter] = useState("all");
-  const [section, setSection] = useState("standard"); // "standard" | "market" | "rewards"
+  const [section, setSection] = useState("standard"); // "standard" | "spells" | "library" | "market" | "rewards"
+  const [spellTarget, setSpellTarget] = useState(null); // member id for spell assignment
 
   const rarityColor = (r) => {
     if (r <= 5) return "#6a9a4a";
@@ -2070,12 +2099,114 @@ function ArmoryPanel({ stash, setStash, remaining, members }) {
             disabled={!isFree && !canBuy}
             onClick={() => isFree ? receiveReward(item.id) : (!canBuy ? null : buyItem(item.id))}
             title={isFree ? "Add to company stash" : "Buy for company"}
-          >{isFree ? "+" : "+"}</button>
+          >+</button>
         )}
         {unequipped > 0 && (
           <button className="ai-sell-btn" onClick={() => removeFromStash(item.id, src)} title="Remove from stash">−</button>
         )}
       </div>
+    );
+  };
+
+  // ── Spell section helpers ──
+  const casterMembers = members.filter(m => canCast(m, stash));
+  const activeMember = spellTarget ? members.find(m => m.id === spellTarget) : casterMembers[0];
+
+  const SpellSection = ({ tomeOnly }) => {
+    const spells = tomeOnly
+      ? SPELLS.filter(sp => sp.tome)
+      : SPELLS.filter(sp => !sp.tome);
+
+    if (casterMembers.length === 0) {
+      return <p className="sec-note" style={{marginTop:".5rem"}}>No characters in your company can cast spells. Assign a Sorcerer or Witch augment, or equip a Spellbook or Staff.</p>;
+    }
+
+    const target = activeMember ?? casterMembers[0];
+
+    const canLearnSpell = (sp) => {
+      if (!target) return false;
+      const aug = augOf(target.augmentId);
+      if (sp.for === "witch" && aug?.spellcaster !== "witch") return false;
+      if (sp.for === "sorcerer" && aug?.spellcaster !== "sorcerer") return false;
+      if (sp.for === "undead" && target.raceId !== "undead") return false;
+      return true;
+    };
+
+    const memberSpells = target?.spells ?? [];
+    const memberGold = remaining; // uses company gold
+
+    return (
+      <>
+        {tomeOnly && <div className="market-roll-hint">📚 Roll 2d6 at the Library — meet or beat the rarity number to find this tome</div>}
+        <div style={{display:"flex",alignItems:"center",gap:".5rem",margin:".4rem 0"}}>
+          <span style={{fontFamily:"'Cinzel',serif",fontSize:".72rem",color:"var(--txt-d)",flexShrink:0}}>Assign to:</span>
+          <div style={{display:"flex",gap:".3rem",flexWrap:"wrap"}}>
+            {casterMembers.map(m => (
+              <button key={m.id}
+                className={"mf-btn" + ((target?.id === m.id) ? " active" : "")}
+                onClick={() => setSpellTarget(m.id)}>
+                {m.isLeader ? "👑 " : ""}{m.name || raceOf(m.raceId)?.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="armory-list">
+          {spells.map(sp => {
+            if (!target) return null;
+            const owned = memberSpells.includes(sp.id);
+            const canAfford = owned || sp.cost <= memberGold;
+            const eligible = canLearnSpell(sp);
+            const isExclusive = sp.for !== "all";
+            return (
+              <div key={sp.id}
+                className={"armory-item" + (owned ? " ai-owned" : "") + ((!canAfford || !eligible) && !owned ? " ai-blocked" : "")}
+                style={{cursor: eligible ? "pointer" : "default"}}
+                onClick={() => {
+                  if (!eligible || (!canAfford && !owned)) return;
+                  const next = owned
+                    ? memberSpells.filter(id => id !== sp.id)
+                    : [...memberSpells, sp.id];
+                  update(target.id, { spells: next });
+                }}>
+                <div className="ai-info">
+                  <span className="ai-name">
+                    {sp.name}
+                    {isExclusive && <span className="kw" style={{marginLeft:".35rem"}}>
+                      {sp.for === "witch" ? "Witch" : sp.for === "sorcerer" ? "Sorcerer" : "Undead"}
+                    </span>}
+                    {sp.tome && <span className="kw" style={{marginLeft:".35rem",background:"rgba(100,60,160,.25)",borderColor:"rgba(150,100,220,.4)",color:"#b090e0"}}>Tome</span>}
+                    {sp.tome && <span style={{marginLeft:".35rem",fontSize:".65rem",color:rarityColor(sp.rarity)}}>Rarity {sp.rarity}</span>}
+                    {!eligible && <span style={{marginLeft:".35rem",fontSize:".65rem",color:"var(--txt-d)"}}>— not eligible</span>}
+                    {owned && <span style={{marginLeft:".35rem",fontSize:".65rem",color:"var(--gold)"}}>✓ Learned</span>}
+                  </span>
+                  <span className="ai-meta">
+                    Diff: {sp.diff} · Range: {sp.range}
+                    {sp.dmg !== null ? ` · DMG: ${sp.dmg}` : ""}
+                    {" · "}{sp.effect}
+                  </span>
+                </div>
+                <div className="ai-actions">
+                  <span className="ai-cost">🪙 {sp.cost}</span>
+                  {eligible && (
+                    <button
+                      className={owned ? "ai-sell-btn" : "ai-buy-btn"}
+                      disabled={!owned && !canAfford}
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (!canAfford && !owned) return;
+                        const next = owned
+                          ? memberSpells.filter(id => id !== sp.id)
+                          : [...memberSpells, sp.id];
+                        update(target.id, { spells: next });
+                      }}
+                    >{owned ? "−" : "+"}</button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </>
     );
   };
 
@@ -2101,7 +2232,9 @@ function ArmoryPanel({ stash, setStash, remaining, members }) {
   return (
     <div className="armory-panel">
       <div className="armory-section-tabs">
-        <button className={"ast-btn" + (section === "standard" ? " active" : "")} onClick={() => setSection("standard")}>Standard</button>
+        <button className={"ast-btn" + (section === "standard" ? " active" : "")} onClick={() => setSection("standard")}>Equipment</button>
+        <button className={"ast-btn" + (section === "spells" ? " active" : "")} onClick={() => setSection("spells")}>✨ Spells</button>
+        <button className={"ast-btn" + (section === "library" ? " active" : "")} onClick={() => setSection("library")}>📚 Library</button>
         <button className={"ast-btn" + (section === "market" ? " active" : "")} onClick={() => setSection("market")}>🎲 Market</button>
         <button className={"ast-btn" + (section === "rewards" ? " active" : "")} onClick={() => setSection("rewards")}>🏆 Rewards</button>
       </div>
@@ -2126,7 +2259,7 @@ function ArmoryPanel({ stash, setStash, remaining, members }) {
                       {item.dmg && `DMG ${item.dmg} · `}
                       {item.bonus && `${item.bonus} · `}
                       {(item.effect ?? item.note ?? "").slice(0, 70) + ((item.effect ?? item.note ?? "").length > 70 ? "…" : "")}
-                      {item.keywords?.map(k => <span key={k} className="kw" style={{marginLeft:'.3rem'}}>{k}</span>)}
+                      {item.keywords?.map(k => <span key={k} className="kw" style={{marginLeft:".3rem"}}>{k}</span>)}
                     </span>
                     <StashOwnershipRow itemId={item.id} src="shop" />
                   </div>
@@ -2137,6 +2270,9 @@ function ArmoryPanel({ stash, setStash, remaining, members }) {
           </div>
         </>
       )}
+
+      {section === "spells" && <SpellSection tomeOnly={false} />}
+      {section === "library" && <SpellSection tomeOnly={true} />}
 
       {section === "market" && (
         <>
@@ -2153,7 +2289,7 @@ function ArmoryPanel({ stash, setStash, remaining, members }) {
               const titleRequired = item.requiresTitle ? TITLES.find(t => t.id === item.requiresTitle) : null;
               return (
                 <div key={item.id} className={"armory-item" + (count > 0 ? " ai-owned" : "") + (cantAfford && count === 0 ? " ai-blocked" : "")}>
-                  <div className="mc-rarity" style={{flexShrink:0,marginRight:'.5rem'}}>
+                  <div className="mc-rarity" style={{flexShrink:0,marginRight:".5rem"}}>
                     <span className="mc-rarity-num" style={{color: rarityColor(item.rarity)}}>{item.rarity}</span>
                     <span className="mc-rarity-lbl">Rarity</span>
                   </div>
@@ -2195,7 +2331,7 @@ function ArmoryPanel({ stash, setStash, remaining, members }) {
                       {item.range && item.range !== "—" && `${item.range} · `}
                       {item.dmg && item.dmg !== "—" && `DMG ${item.dmg} · `}
                       {(item.note ?? "").slice(0, 70) + ((item.note ?? "").length > 70 ? "…" : "")}
-                      {item.keywords?.map(k => <span key={k} className="kw" style={{marginLeft:'.3rem'}}>{k}</span>)}
+                      {item.keywords?.map(k => <span key={k} className="kw" style={{marginLeft:".3rem"}}>{k}</span>)}
                     </span>
                     <StashOwnershipRow itemId={item.id} src="reward" />
                   </div>
@@ -2451,45 +2587,62 @@ function SpellsTab({ member, stash, remaining, update }) {
   const available = getSpellsFor(member, stash);
   const aug = augOf(member.augmentId);
   const st = aug?.spellcaster;
+  const standardSpells = available.filter(sp => !sp.tome);
+  const tomeSpells = available.filter(sp => sp.tome);
+
+  const SpellRow = ({ sp, showRarity }) => {
+    const owned = (member.spells ?? []).includes(sp.id);
+    const canAfford = owned || sp.cost <= remaining;
+    const isExclusive = sp.for !== "all";
+    return (
+      <div
+        className={"item-row " + (owned ? "owned " : "") + (!canAfford && !owned ? "disabled" : "")}
+        onClick={() => {
+          if (!canAfford && !owned) return;
+          const next = owned ? member.spells.filter(id => id !== sp.id) : [...(member.spells ?? []), sp.id];
+          update(member.id, { spells: next });
+        }}>
+        <div className="ir-check">{owned ? "\u2713" : "+"}</div>
+        <div className="ir-info">
+          <span className="ir-name">
+            {sp.name}
+            {isExclusive && <span className="kw" style={{marginLeft:".4rem"}}>
+              {sp.for === "witch" ? "Witch" : sp.for === "sorcerer" ? "Sorcerer" : "Undead"}
+            </span>}
+            {sp.tome && <span className="kw" style={{marginLeft:".4rem",background:"rgba(100,60,160,.25)",borderColor:"rgba(150,100,220,.4)",color:"#b090e0"}}>Tome</span>}
+            {showRarity && <span style={{marginLeft:".4rem",fontSize:".65rem",color:"var(--txt-d)"}}>Rarity {sp.rarity}</span>}
+          </span>
+          <span className="ir-meta">
+            Diff: {sp.diff} · Range: {sp.range}
+            {sp.dmg !== null ? " · DMG: " + sp.dmg : ""}
+            {" · "}{sp.effect}
+          </span>
+        </div>
+        <span className="ir-cost">\uD83E\uDE99 {sp.cost}</span>
+      </div>
+    );
+  };
+
   return (
     <div>
       <p className="sec-note">
-        Select spells to purchase for this fighter.
-        {st === "witch" ? " Life Drain is Witch-exclusive." : st === "sorcerer" ? " Quicken is Sorcerer-exclusive." : ""}
+        Standard spells are purchased at the Market. Tomes must be found at the Library — roll 2d6 and meet or beat the rarity number to find a vendor.
+        {st === "witch" ? " Life Drain is Witch-exclusive." : st === "sorcerer" ? " Manifest is Sorcerer-exclusive." : ""}
         {member.raceId === "undead" ? " Necrotic Bolt is available to Undead casters." : ""}
       </p>
       <div className="item-list">
-        {available.map(sp => {
-          const owned = (member.spells ?? []).includes(sp.id);
-          const canAfford = owned || sp.cost <= remaining;
-          const isExclusive = sp.for !== "all";
-          return (
-            <div key={sp.id}
-              className={`item-row ${owned ? "owned" : ""} ${!canAfford && !owned ? "disabled" : ""}`}
-              onClick={() => {
-                if (!canAfford && !owned) return;
-                const next = owned ? member.spells.filter(id => id !== sp.id) : [...(member.spells ?? []), sp.id];
-                update(member.id, { spells: next });
-              }}>
-              <div className="ir-check">{owned ? "✓" : "+"}</div>
-              <div className="ir-info">
-                <span className="ir-name">
-                  {sp.name}
-                  {isExclusive && <span className="kw" style={{marginLeft:'.4rem'}}>
-                    {sp.for === "witch" ? "Witch" : sp.for === "sorcerer" ? "Sorcerer" : "Undead"}
-                  </span>}
-                </span>
-                <span className="ir-meta">
-                  Diff: {sp.diff} · Range: {sp.range}
-                  {sp.dmg !== null ? ` · DMG: ${sp.dmg}` : ""}
-                  {" · "}{sp.effect}
-                </span>
-              </div>
-              <span className="ir-cost">🪙 {sp.cost}</span>
-            </div>
-          );
-        })}
+        {standardSpells.map(sp => <SpellRow key={sp.id} sp={sp} showRarity={false} />)}
       </div>
+      {tomeSpells.length > 0 && <>
+        <div style={{margin:"1rem 0 .5rem",display:"flex",alignItems:"center",gap:".5rem"}}>
+          <span style={{fontFamily:"'Cinzel',serif",fontSize:".75rem",color:"var(--gold)",textTransform:"uppercase",letterSpacing:".1em"}}>\uD83D\uDCDA Library Tomes</span>
+          <div style={{flex:1,height:"1px",background:"rgba(200,149,42,.3)"}}></div>
+        </div>
+        <p className="sec-note" style={{marginBottom:".5rem"}}>Roll 2d6 at the Library — meet or beat the rarity number to find a vendor.</p>
+        <div className="item-list">
+          {tomeSpells.map(sp => <SpellRow key={sp.id} sp={sp} showRarity={true} />)}
+        </div>
+      </>}
     </div>
   );
 }
@@ -2608,14 +2761,15 @@ function TitlesTab({ member, update }) {
 
   return (
     <div className="market-wrap">
-      <p className="sec-note">Click to grant or revoke a title. Titles granted by talents are locked here — remove the talent to lose the title.</p>
+      <p className="sec-note">Click an unowned title to grant it. Click a held title to remove it. Titles granted by talents are locked — remove the talent to lose the title.</p>
       <div className="market-grid">
         {TITLES.map(title => {
           const fromTalent = talentTitles.includes(title.id);
           const isOwned = getTitles(member).some(t => t.id === title.id);
+          const isManuallyOwned = isOwned && !fromTalent;
           return (
             <div key={title.id}
-              className={"title-card" + (isOwned ? " tc-owned" : "") + (fromTalent ? " tc-locked" : "")}
+              className={"title-card" + (isOwned ? " tc-owned" : "") + (fromTalent ? " tc-locked" : "") + (isManuallyOwned ? " tc-removable" : "")}
               onClick={() => toggleTitle(title.id)}>
               <div className="tc-inf">
                 <span className="tc-inf-num">{title.influence > 0 ? "+" + title.influence : "—"}</span>
@@ -2624,7 +2778,9 @@ function TitlesTab({ member, update }) {
               <div className="tc-body">
                 <div className="mc-top">
                   <span className="tc-name">{title.name}</span>
-                  {isOwned && <span className="mc-owned-badge">{fromTalent ? "🔒 From talent" : "✓ Held"}</span>}
+                  {fromTalent && <span className="mc-owned-badge">🔒 Talent</span>}
+                  {isManuallyOwned && <span className="tc-remove-badge">✕ Remove</span>}
+                  {!isOwned && <span style={{fontSize:'.68rem',color:'var(--txt-d)',marginLeft:'auto'}}>Click to grant</span>}
                 </div>
                 {title.effect && <div className="tc-effect">{title.effect}</div>}
               </div>
@@ -2751,7 +2907,6 @@ export default function App() {
   const [showMinionModal, setShowMinionModal] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [showArmory, setShowArmory] = useState(false);
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -2976,12 +3131,38 @@ export default function App() {
     if (expandedId === id) setExpandedId(null);
   };
 
+  const sacrificeMember = (member) => {
+    const talentList = Object.values(member.talents ?? {}).filter(Boolean);
+    const sacrificeTalent = ["glory", "greed", "enthrall", "rage_sac"].find(t => talentList.includes(t));
+    if (!sacrificeTalent) return;
+
+    const talentNames = { glory: "Glory (1 influence)", greed: "Greed (6 gems)", enthrall: "Enthrall (leader +1 talent point)", rage_sac: "Rage (leader +2 attack rolls)" };
+    const confirmed = window.confirm(`Sacrifice ${member.name}?\n\nEffect: ${talentNames[sacrificeTalent]}\n\nAll equipped items will be returned to the company stash. This cannot be undone.`);
+    if (!confirmed) return;
+
+    // Return all equipped items to stash (unequip by removing from member — stash entries remain)
+    setMembers(prev => prev.map(m => {
+      if (m.id === member.id) return null; // will be filtered
+      // Apply rage_sac to leader
+      if (sacrificeTalent === "rage_sac" && m.isLeader) return { ...m, rageSacBonus: true };
+      // Apply enthrall to leader — give extra talent point
+      if (sacrificeTalent === "enthrall" && m.isLeader) return { ...m, bonusTalentPoints: (m.bonusTalentPoints ?? 0) + 1 };
+      return m;
+    }).filter(Boolean));
+
+    // Unequip all items (they stay in stash automatically since stash is separate)
+    // Nothing needed — items in stash are already there, equipped refs just live on member
+
+    setMinions(prev => prev.map(mn => mn.ownerId === member.id ? { ...mn, ownerId: null } : mn));
+    if (expandedId === member.id) setExpandedId(null);
+  };
+
   const update = (id, patch) => setMembers(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m));
 
   const getTab = (id) => tabs[id] || "augment";
   const setTab = (id, t) => setTabs(prev => ({ ...prev, [id]: t }));
 
-  const TABS_FOR = (m) => ["augment", "equip", canCast(m, stash) ? "spells" : null, "talents", "titles"].filter(Boolean);
+  const TABS_FOR = (m) => ["augment", "equip", "talents", "titles"];
 
   return (
     <>
@@ -3082,20 +3263,6 @@ export default function App() {
       )}
 
       {/* Armory modal */}
-      {showArmory && (
-        <div className="backdrop" onClick={() => setShowArmory(false)}>
-          <div className="armory-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-hdr">
-              <h2>⚒ Company Armory</h2>
-              <button className="close-btn" onClick={() => setShowArmory(false)}>✕</button>
-            </div>
-            <div className="armory-modal-sub">🪙 {remaining} gold remaining · Purchase items for your company. Equip them to fighters from the Equip tab.</div>
-            {hasHousing && <div className="armory-housing-badge">🏠 Housing · Company size +2</div>}
-            <ArmoryPanel stash={stash} setStash={setStash} remaining={remaining} members={members} />
-          </div>
-        </div>
-      )}
-
       <div className="app">
         <header className="hdr">
           <h1>Brannigan</h1>
@@ -3152,7 +3319,7 @@ export default function App() {
         <div className="prog-wrap">
           <div className={`prog-fill ${pct > 100 ? "danger" : pct > 85 ? "warn" : ""}`} style={{ width: `${Math.min(pct,100)}%` }} />
         </div>
-        {overBudget && <div className="budget-warn">⚠ Over budget by 🪙 {Math.abs(remaining)} — sell items from the Armory to resolve.</div>}
+        {overBudget && <div className="budget-warn">⚠ Over budget by 🪙 {Math.abs(remaining)} — sell items from Equipment to resolve.</div>}
 
         <div className="layout">
           {/* Main column */}
@@ -3164,9 +3331,7 @@ export default function App() {
               <button className="add-btn" onClick={() => setShowModal(true)} disabled={members.length >= maxSize}>
                 + Recruit Fighter ({members.length}/{maxSize})
               </button>
-              <button className="armory-btn" onClick={() => setShowArmory(true)}>
-                ⚒ Armory {stash.length > 0 ? `(${stash.length})` : ""}
-              </button>
+
             </div>
 
             {members.length === 0 ? (
@@ -3246,16 +3411,26 @@ export default function App() {
                           <span className="mem-stat">⚡ {getSpeed(member, stash)}</span>
                           <span className="mem-stat">🛡 {getArmor(member, stash)}</span>
                           {(() => {
+                            const isBulky = member.augmentId === "bulky" || Object.values(member.talents ?? {}).includes("bulk");
                             const mBonus = getHitBonus(member, stash, "melee");
                             const rBonus = getHitBonus(member, stash, "ranged");
                             const mStr = getHitStr(member, stash, "melee");
                             const rStr = getHitStr(member, stash, "ranged");
+                            const riseStr = getRiseAgainStr(member);
+                            const talentList = Object.values(member.talents ?? {}).filter(Boolean);
+                            const riseBonus = (talentList.includes("reise") ? 1 : 0) + (talentList.includes("mercy") ? 1 : 0);
                             return (<>
                               <span className={`mem-stat mem-hit ${mBonus > 0 ? "hit-good" : mBonus < 0 ? "hit-bad" : ""}`} title={`Melee to hit${mBonus !== 0 ? ` (${mBonus > 0 ? "+" : ""}${mBonus} bonus)` : ""}`}>⚔ {mStr}</span>
                               <span className={`mem-stat mem-hit ${rBonus > 0 ? "hit-good" : rBonus < 0 ? "hit-bad" : ""}`} title={`Ranged to hit${rBonus !== 0 ? ` (${rBonus > 0 ? "+" : ""}${rBonus} bonus)` : ""}`}>🏹 {rStr}</span>
+                              {isBulky && <span className="mem-stat mem-bulky-warn" title="Ranged attacks against this character get +1 to hit">🎯 Easy target</span>}
+                              {riseStr && <span className={`mem-stat mem-hit ${riseBonus > 0 ? "hit-good" : ""}`} title={`Rise Again roll${riseBonus > 0 ? ` (+${riseBonus} bonus)` : " (base)"}`}>💀 {riseStr}</span>}
+                              {member.rageSacBonus && <span className="mem-stat hit-good" title="Rage sacrifice active: +2 to all attack rolls">⚔ +2 Rage</span>}
                             </>);
                           })()}
                           <button className="del-btn" onClick={e => { e.stopPropagation(); deleteMember(member.id); }} title="Dismiss">✕</button>
+                          {member.raceId === "undead" && ["glory","greed","enthrall","rage_sac"].some(t => Object.values(member.talents ?? {}).includes(t)) && (
+                            <button className="sac-btn" onClick={e => { e.stopPropagation(); sacrificeMember(member); }} title="Sacrifice this character">☠</button>
+                          )}
                           <span className={`chevron ${isOpen ? "open" : ""}`}>▼</span>
                         </div>
                       </div>
@@ -3263,6 +3438,15 @@ export default function App() {
                       {isOpen && (
                         <div className="mem-body">
                           <div className="race-bar"><span className="race-bar-lbl">{race.name}:</span>{race.special}</div>
+                          {(member.spells ?? []).length > 0 && (
+                            <div className="race-bar" style={{flexWrap:"wrap",gap:".3rem"}}>
+                              <span className="race-bar-lbl">Spells:</span>
+                              {(member.spells ?? []).map(sid => {
+                                const sp = SPELLS.find(s => s.id === sid);
+                                return sp ? <span key={sid} className="kw" style={{fontSize:".65rem",background: sp.tome ? "rgba(100,60,160,.2)" : undefined, borderColor: sp.tome ? "rgba(150,100,220,.4)" : undefined, color: sp.tome ? "#b090e0" : undefined}}>{sp.name}</span> : null;
+                              })}
+                            </div>
+                          )}
                           <div className="tabs">
                             {memberTabs.map(t => (
                               <button key={t} className={`tab-btn ${tab === t ? "active" : ""}`} onClick={() => setTab(member.id, t)}>
@@ -3273,7 +3457,6 @@ export default function App() {
                           <div className="tab-content">
                             {tab === "augment" && <AugmentTab member={member} remaining={remaining} update={update} />}
                             {tab === "equip"   && <EquipTab   member={member} stash={stash} members={members} update={update} />}
-                            {tab === "spells"  && <SpellsTab  member={member} stash={stash} remaining={remaining} update={update} />}
                             {tab === "talents" && <TalentsTab member={member} update={update} />}
                             {tab === "titles"  && <TitlesTab  member={member} update={update} />}
                           </div>
@@ -3321,6 +3504,13 @@ export default function App() {
               )}
               <button className="add-minion-btn" onClick={() => setShowMinionModal(true)}>+ Add Minion</button>
             </div>
+
+            {/* Inline Equipment Panel */}
+            <div className="inline-armory">
+              <div className="sec-head" style={{marginBottom:".5rem"}}>Equipment</div>
+              {hasHousing && <div className="armory-housing-badge" style={{marginBottom:".5rem"}}>🏠 Housing · Company size +2</div>}
+              <ArmoryPanel stash={stash} setStash={setStash} remaining={remaining} members={members} update={update} />
+            </div>
           </div>
 
           {/* Sidebar */}
@@ -3328,7 +3518,7 @@ export default function App() {
             <div className="sc">
               <div className="sc-title">Company Inventory</div>
               {stash.length === 0 ? (
-                <p className="sc-empty">No items purchased yet. Open the Armory to buy equipment.</p>
+                <p className="sc-empty">No items purchased yet. Use the Equipment tabs below to buy gear.</p>
               ) : (
                 <>
                   {(() => {
