@@ -1589,9 +1589,6 @@ body{
 /* ─── PRINT MEDIA ─── */
 @media print {
   body > * { display:none !important; }
-  body > #root { display:block !important; }
-  #root > * { display:none !important; }
-  #root > .print-backdrop,
   .print-backdrop { display:block !important; position:static !important; background:none !important; overflow:visible !important; }
   .print-modal {
     display:block !important;
