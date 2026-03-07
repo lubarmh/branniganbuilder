@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
 // ===================== DATA =====================
 
@@ -10,10 +10,9 @@ const RACES = [
   { id:"human",    name:"Human",    cost:10, speed:4, hp:10, special:'Parry grants an extra +1 to armor.' },
   { id:"dwarf",    name:"Dwarf",    cost:10, speed:3, hp:12, special:'Ignores the Heavy keyword.' },
   { id:"elf",      name:"Elf",      cost:10, speed:4, hp:10, special:'+2" range and ignores cover when shooting a bow.' },
-  { id:"goblin",   name:"Goblin",   cost:5,  speed:4, hp:6,  special:"Can't use heavy armor.", noHeavyArmor:true },
+  { id:"goblin",   name:"Goblin",   cost:5,  speed:4, hp:6,  special:"Can't use heavy armor. Can't use black powder weapons.", noHeavyArmor:true, noBlackPowder:true },
   { id:"ork",      name:"Ork",      cost:10, speed:4, hp:10, special:'+1 on hit rolls in melee when below starting health.' },
   { id:"undead",   name:"Undead",   cost:5,  speed:3, hp:5,  special:'Rise Again. Can only level up in the Undead tree (except the leader).' },
-  { id:"bullywug", name:"Bullywug", cost:10, speed:5, hp:10, special:"Can't wear armor. Can't use black powder weapons.", noArmor:true, noBlackPowder:true },
   { id:"halfling", name:"Halfling", cost:10, speed:4, hp:7,  special:'May perform 1 free movement action before the game starts.' },
   { id:"vampire",  name:"Vampire",  cost:30, speed:5, hp:15, special:"Movement not affected vertically. Regains half of slain target's max HP on knockout. Can't be Nimble or Bulky. Max 2 per company.", noBulky:true, noNimble:true, maxPercompany:2 },
 ];
@@ -23,10 +22,10 @@ const WEAPONS = [
   { id:"crossbow",        name:"Crossbow",             range:'2–16"',    dmg:"5",   cost:6,  hands:2, wtype:"ranged",  keywords:["Reload"], note:"+1 to hit rolls" },
   { id:"hand_crossbow",   name:"Hand-Crossbow",        range:'6"',       dmg:"3",   cost:5,  hands:1, wtype:"ranged",  keywords:["Reload"], note:"1h" },
   { id:"falcon",          name:"Falcon",               range:'8"',       dmg:"2",   cost:10, hands:1, wtype:"ranged",  keywords:["Reload"], note:"Always hits" },
-  { id:"sword",           name:"Sword",                range:"Melee",    dmg:"3",   cost:5,  hands:1, wtype:"melee",   keywords:["Parry"], note:"1h" },
+  { id:"sword",           name:"Sword",                range:"Melee",    dmg:"3",   cost:5,  hands:1, wtype:"melee",   keywords:["Parry"], note:"1h · Parry: activation, +1 armor until end of round" },
   { id:"mace",            name:"Mace",                 range:"Melee",    dmg:"3",   cost:5,  hands:1, wtype:"melee",   keywords:[], note:"1h · Treat heavy armor as medium" },
   { id:"axe",             name:"Axe",                  range:"Melee",    dmg:"3",   cost:5,  hands:1, wtype:"melee",   keywords:[], note:"1h · Ignore medium armor" },
-  { id:"dagger",          name:"Dagger",               range:"Melee",    dmg:"2",   cost:2,  hands:1, wtype:"melee",   keywords:["Ambush"], note:"1h · -1 to hit" },
+  { id:"dagger",          name:"Dagger",               range:"Melee",    dmg:"2",   cost:2,  hands:1, wtype:"melee",   keywords:["Ambush"], note:"1h · -1 to hit · Dual wield: attack twice, both at -1" },
   { id:"staff",           name:"Staff",                range:'Melee 2"', dmg:"1",   cost:3,  hands:2, wtype:"melee",   keywords:["Poke","Casting"], note:"-1 to hit · On 6: target knocked prone" },
   { id:"spear",           name:"Spear",                range:'Melee 2"', dmg:"3/4", cost:5,  hands:1, wtype:"melee",   keywords:["Poke"], note:"1h/2h" },
   { id:"flail",           name:"Flail",                range:"Melee",    dmg:"3",   cost:5,  hands:1, wtype:"melee",   keywords:[], note:"1h · On miss: roll to hit another melee target" },
@@ -40,9 +39,11 @@ const WEAPONS = [
 ];
 
 const ARMOR_LIST = [
-  { id:"medium_armor", name:"Medium Armor", cost:10, bonus:"+1 Armor", heavy:false, slot:"armor" },
-  { id:"heavy_armor",  name:"Heavy Armor",  cost:15, bonus:"+2 Armor", heavy:true,  slot:"armor", keywords:["Heavy"] },
-  { id:"shield",       name:"Shield",       cost:5,  bonus:"+1 Armor", heavy:false, slot:"melee", hands:1, wtype:"melee", note:"1h · Equips as melee weapon, grants +1 armor" },
+  { id:"light_armor",  name:"Light Armor",  cost:8,  armor:1, armorType:"light",  heavy:false, movePenalty:0,  slot:"armor", note:"Light — no movement penalty" },
+  { id:"medium_armor", name:"Medium Armor", cost:10, armor:2, armorType:"medium", heavy:false, movePenalty:-1, slot:"armor", note:"Medium — −1\" movement", keywords:["Medium"] },
+  { id:"heavy_armor",  name:"Heavy Armor",  cost:15, armor:3, armorType:"heavy",  heavy:true,  movePenalty:-2, slot:"armor", note:"Heavy — −2\" movement", keywords:["Heavy"] },
+  { id:"shield",       name:"Shield",       cost:5,  armor:1, armorType:null,     heavy:false, movePenalty:0,  slot:"melee", hands:1, wtype:"melee", note:"1h · Equips as melee weapon, grants +1 armor" },
+  { id:"barding",      name:"Barding",      cost:15, armor:1, armorType:null,     heavy:false, movePenalty:0,  slot:"item",  note:"Requires mount equipped. +1 armor for mounted character.", requiresMount:true },
 ];
 
 const ITEMS = [
@@ -73,12 +74,16 @@ const MARKET_ITEMS = [
   { id:"repeater_flintlock",name:"Repeater Flintlock",  category:"weapon", range:'6"',       dmg:"4", cost:15, rarity:10, hands:1, wtype:"ranged", keywords:[],           note:"1h", info:"Fires twice before reloading.", blackPowder:true },
   { id:"piercing_spear",  name:"Piercing Spear",        category:"weapon", range:'Melee 2"', dmg:"5", cost:15, rarity:8,  hands:2, wtype:"melee",  keywords:["Poke"],     note:"2h · Double damage vs. mounted", info:"A lance-like spear honed to penetrate barding." },
   { id:"brannigan_rapier", name:"Brannigan Rapier",     category:"weapon", range:'Melee',    dmg:"4", cost:5,  rarity:10, hands:1, wtype:"melee",  keywords:["Parry"],    note:"1h · +2 armor when using Parry", info:"A duelist's blade of uncanny balance." },
+  { id:"cinquedea",        name:"Cinquedea",            category:"weapon", range:'Melee',    dmg:"3", cost:15, rarity:8,  hands:1, wtype:"melee",  keywords:["Parry","Ambush"], note:"1h · Parry and Ambush on a single blade", info:"A wide blade favoured by merchants and nobles. Patient in defence, brutal in the shadows." },
   // ── Armor ──
-  { id:"mithril_armor",   name:"Mithril Armor",         category:"armor",  armor:2, cost:25, rarity:7,  slot:"armor", keywords:[],         note:"", info:"Feather-light yet stronger than steel." },
-  { id:"obsidian_armor",  name:"Obsidian Armor",        category:"armor",  armor:2, cost:30, rarity:7,  slot:"armor", keywords:["Heavy"],  note:"-2 to all damage taken", info:"Dark volcanic plates. Heavy but near impenetrable." },
+  { id:"mithril_armor",   name:"Mithril Armor",         category:"armor",  armor:2, cost:25, rarity:7,  armorType:"light",  movePenalty:0,  heavy:false, slot:"armor", keywords:[],         note:"Light — no movement penalty · +2 armor", info:"Feather-light yet stronger than steel." },
+  { id:"obsidian_armor",  name:"Obsidian Armor",        category:"armor",  armor:3, cost:30, rarity:7,  armorType:"heavy",  movePenalty:-2, heavy:true,  slot:"armor", keywords:["Heavy"],  note:"Heavy — −2\" movement · −2 to all damage taken", info:"Dark volcanic plates. Heavy but near impenetrable." },
   { id:"assassin_mocasines",name:"Assassin's Moccasins",category:"armor",  armor:0, cost:5,  rarity:7,  slot:"item",  keywords:[],         note:"+1 to Ambush rolls", info:"Soft-soled shoes that muffle every footstep." },
-  { id:"dark_cloak",      name:"Dark Cloak",            category:"armor",  armor:0, cost:0,  rarity:5,  slot:"item",  keywords:[],         note:"+1 armor while in cover", info:"Shadows cling to this cloak unnaturally." },
   { id:"mirror_shield",   name:"Mirror Shield",         category:"armor",  armor:1, cost:25, rarity:8,  slot:"melee", hands:1, wtype:"melee", keywords:[],  note:"1h · On roll of 4+: reflect spells back to caster", info:"A polished buckler that turns magic aside." },
+  { id:"arcane_weave",    name:"Arcane Weave",          category:"armor",  armor:1, cost:15, rarity:6,  armorType:"light",  movePenalty:0,  heavy:false, slot:"armor", keywords:[],         note:"Light — no movement penalty · Spells targeting wearer have difficulty +2", info:"Threads of nullifying magic woven into supple leather." },
+  { id:"spellward_mail",  name:"Spellward Mail",        category:"armor",  armor:2, cost:20, rarity:7,  armorType:"medium", movePenalty:-1, heavy:false, slot:"armor", keywords:["Medium"],  note:"Medium — −1\" movement · Magic damage taken reduced by 2", info:"Runes etched into every ring absorb arcane energy." },
+  { id:"ironback",        name:"Ironback",              category:"armor",  armor:2, cost:15, rarity:6,  armorType:"medium", movePenalty:-1, heavy:false, slot:"armor", keywords:["Medium"],  note:"Medium — −1\" movement · Ambush attacks grant no bonus against this character", info:"Reinforced backplate. Stabbing this one in the back is a fool's errand." },
+  { id:"spiked_armor",    name:"Spiked Armor",          category:"armor",  armor:3, cost:25, rarity:7,  armorType:"heavy",  movePenalty:-2, heavy:true,  slot:"armor", keywords:["Heavy"],   note:"Heavy — −2\" movement · Melee attackers take 1 damage on hit", info:"A brutal suit of outward-facing spikes. Dangerous to touch." },
   { id:"eyepatch",        name:"Eyepatch",              category:"armor",  armor:0, cost:5,  rarity:5,  slot:"item",  keywords:[],         note:"+1 ranged attack · Enemies get +1 to melee attacks vs this character", info:"A curious tradeoff. Sharpens the aim, opens the flank." },
   { id:"witch_hat",       name:"Witch Hat",             category:"armor",  armor:0, cost:30, rarity:8,  slot:"item",  keywords:[],         note:"Life Drain heals 1d6 instead of 1d3", info:"Pointed and wide-brimmed. Hums with coven magic." },
   // ── Items ──
@@ -97,7 +102,6 @@ const TITLES = [
   { id:"minister",        name:"Brannigan Minister",    influence:2, effect:"If the Minister dies, shuffle the Audience With the Companies event card into the quest deck." },
   { id:"priest",          name:"Priest",                influence:0, effect:"All healing effects performed by the Priest restore 1 additional health." },
   { id:"lobbyist",        name:"Lobbyist",              influence:2, effect:"Granted through the Lobbyist talent." },
-  { id:"striking_beauty", name:"Striking Beauty",       influence:2, effect:"" },
 ];
 
 const REWARD_ITEMS = [
@@ -159,7 +163,7 @@ const KEYWORDS = {
   Reload:"Must spend an action to reload before using again.",
   "Slow Reload":"Must spend two actions to reload before using again.",
   "Fire Once":"Can only be used once per battle.",
-  Parry:"Use an action to declare Parry — receive +1 armor until next turn.",
+  Parry:"Use as an activation — receive +1 armor until end of the round. Humans gain +2 armor instead.",
   Heavy:"-1\" movement. Fall damage uses d6 instead of d3.",
   Casting:"Can be used for spellcasting.",
   Poke:"If a character enters this weapon's range, the carrier may spend one action to attack.",
@@ -169,6 +173,7 @@ const KEYWORDS = {
   "Rise Again":"At the start of each turn, roll d6 for each dead Undead — on 6+ they revive at full HP.",
   Use:"Item is consumed after use.",
   Gruesome:"A knocked-out target affected by Gruesome receives −2 to their injury roll.",
+  "Dual Wield":"Equipping two 1-handed melee weapons lets you attack twice per activation, but both attacks suffer −1 to the attack roll.",
 };
 
 // ===================== FACTION BONUSES =====================
@@ -182,7 +187,6 @@ const FACTION_BONUSES = {
   goblin:   { label:"Goblin Rabble",           icon:"🐀",  bonus:"May purchase 1 Troll minion at half price." },
   ork:      { label:"Ork Warband",             icon:"💢",  bonus:"Orks may move into melee range if they are within 1\" of an enemy." },
   undead:   { label:"Undead Horde",            icon:"💀",  bonus:"Undead skip injury rolls entirely. Vampires still roll as normal." },
-  bullywug: { label:"Bullywug Swarm",          icon:"🐸",  bonus:"May draw 3 cards instead of 2 at the questboard." },
   halfling: { label:"Halfling Shire-Company",  icon:"🌾",  bonus:"Maximum company size increased by 2. +1 to all injury roll results." },
 };
 
@@ -205,21 +209,21 @@ const TALENTS = {
       ],[
         { id:"runner_up",       name:"Runner Up",         desc:"+1\" movement" },
         { id:"cheat_death",     name:"Cheat Death",       desc:"The first time knocked out, stand back up with 1 HP" },
-        { id:"bulk",            name:"Bulk",              desc:"Receive the Bulky augment" },
+        { id:"climber",         name:"Climber",           desc:"This character can move vertically without reduced movement unless mounted." },
         { id:"bouncy",          name:"Bouncy",            desc:"Immune to fall damage" },
-        { id:"lone_fighter",    name:"Lone Fighter",      desc:"One 1-handed weapon and nothing else: +2 to attack roll and +1 damage" },
+        { id:"touche",          name:"Touché",            desc:"After making a melee attack, this character may perform a free Disengage action." },
       ],[
-        { id:"parkour",         name:"Parkour",           desc:"Move vertically without reduced movement" },
+        { id:"grapple",         name:"Grapple",           desc:"Use an action to grab an enemy in base contact. The grabbed character cannot use the Disengage action until this character moves away or is knocked out." },
         { id:"precise_a",       name:"Precise",           desc:"+1 damage with all melee weapons" },
-        { id:"toss",            name:"Toss",              desc:"Ability: Throw a non-Bulky melee character 4\" (6\" if Nimble)" },
+        { id:"lucky",           name:"Lucky",             desc:"Once per round you may reroll one dice." },
         { id:"absorb",          name:"Absorb",            desc:"Spells that fail against this character heal them for 1d6" },
         { id:"eagle_eye",       name:"Eagle Eye",         desc:"Ignore cover when shooting ranged weapons" },
       ],[
-        { id:"meat_grinder",    name:"Meat Grinder",      desc:"Double damage with 2-handed mace, but lose 1\" movement" },
+        { id:"berserker",       name:"Berserker",         desc:"Each time this character takes damage, they gain +1 damage and +1 to melee attack rolls. If wielding a 2-handed weapon, gain +2 damage instead." },
         { id:"swift",           name:"Swift",             desc:"Gain an extra action" },
         { id:"panzer",          name:"Panzer",            desc:"All damage taken is halved (rounded up)" },
         { id:"iron_lung",       name:"Iron Lung",         desc:"Blowpipe shoots 3 times per action" },
-        { id:"striking_beauty", name:"Striking Beauty",   desc:"Title: Striking Beauty. As long as alive, the company receives 2 influence" },
+        { id:"tutor",           name:"Tutor",             desc:"Grant one other member of the company 1 additional talent point. Choose the recipient below." },
       ],
     ],
   },
@@ -232,16 +236,16 @@ const TALENTS = {
         { id:"quick_draw",      name:"Quick Draw",       desc:"Switch between ranged and melee weapons without using an action" },
         { id:"high_ground",     name:"High Ground",      desc:"+1 to ranged attack rolls when 2\" or more above the target" },
       ],[
-        { id:"cavalry_charge",  name:"Cavalry Charge",   desc:"+1 to attack rolls and +1 damage in melee while mounted" },
+        { id:"cavalry_charge",  name:"Cavalry Charge",   desc:"+1 to melee attack rolls and +1 damage while mounted." },
         { id:"iron_skin",       name:"Iron Skin",        desc:"All damage dealt to this character in melee is reduced by 1" },
-        { id:"swashbuckler",    name:"Swashbuckler",     desc:"One 1-handed weapon and nothing else: +1 attack roll and +1 damage" },
+        { id:"swashbuckler",    name:"Swashbuckler",     desc:"Equipped with only one 1-handed weapon and nothing else: +1 to attack roll and +2 damage." },
         { id:"axe_master",      name:"Axe Master",       desc:"1-handed axes +1 damage, 2-handed axes +2 damage" },
         { id:"spear_master",    name:"Spear Master",     desc:"Spears deal double damage against mounted characters" },
       ],[
         { id:"street_fighter",  name:"Street Fighter",   desc:"+1 to attack rolls in melee" },
         { id:"marksman",        name:"Marksman",         desc:"+1 to ranged attack rolls" },
         { id:"shield_master",   name:"Shield Master",    desc:"Shields give an additional +1 armor" },
-        { id:"ambidextrous",    name:"Ambidextrous",     desc:"Offhand attacks no longer give −2 to attack roll" },
+        { id:"ambidextrous",    name:"Ambidextrous",     desc:"Removes the dual wield attack roll penalty." },
         { id:"ride_by",         name:"Ride-By Attack",   desc:"Perform a free attack if you perform two movement actions while mounted" },
       ],[
         { id:"fast_reload",     name:"Fast Reload",      desc:"Reload doesn't require an action; Slow Reload only requires 1 action" },
@@ -265,7 +269,7 @@ const TALENTS = {
         { id:"force_push",      name:"Force Push",       desc:"Force Lance deals no damage but push distance is increased by 1\"" },
         { id:"spell_echo",      name:"Spell Echo",       desc:"Cast two spells in a row: the second gains +1 damage or effect" },
         { id:"charged_bullets", name:"Charged Bullets",  desc:"Black powder weapons ignore armor" },
-        { id:"arcane_insight",  name:"Arcane Insight",   desc:"Once per interwar, learn the effect of one new spell for free" },
+        { id:"preparation",     name:"Preparation",      desc:"At the beginning of each scenario, the first spell this character casts automatically succeeds." },
       ],[
         { id:"inferno",         name:"Inferno",          desc:"Fire Bolt damage and range increased by 2" },
         { id:"mending_word",    name:"Mending Word",     desc:"Healing Word heals 1d6" },
@@ -273,7 +277,7 @@ const TALENTS = {
         { id:"archmage",        name:"Archmage's Gift",  desc:"Once per scenario, automatically succeed a single spell" },
         { id:"distant_sorcery", name:"Distant Sorcery",  desc:"Double the range of all spells" },
       ],[
-        { id:"spell_lock",      name:"Spell Lock",       desc:"Automatically succeed spellcasts — but can only use 1 spell" },
+        { id:"savant",          name:"Savant",           desc:"Automatically succeed spellcasts — but can only use 1 spell." },
         { id:"wild_surge",      name:"Wild Surge",       desc:"Rolls of 6 double the effect and damage of a spell" },
         { id:"enchanter",       name:"Enchanter",        desc:"Use 2 gems to enchant a melee weapon (+1d3 for 1h / +1d6 for 2h)" },
         { id:"healing_aura",    name:"Healing Aura",     desc:"First activation each round heals all characters within 6\" for 1d3" },
@@ -284,17 +288,17 @@ const TALENTS = {
   diplomacy: {
     name:"Diplomacy", icon:"🤝", tiers:[
       [
-        { id:"ordination",      name:"Ordination",       desc:"Receive the title Priest.", grantsTitle:"Priest" },
+        { id:"ordination",      name:"Ordination",       desc:"Grants the Priest title.", grantsTitle:"Priest" },
         { id:"haggler",         name:"Haggler",          desc:"1d6 discount on items that cost 20 or more" },
         { id:"spy_network",     name:"Spy Network",      desc:"You may look at other players' personal quests" },
         { id:"broker",          name:"Broker",           desc:"Whenever another player performs a rarity roll you may add 1 to the result" },
         { id:"jewellers_eye",   name:"Jeweller's Eye",   desc:"+1 value to gem rolls (max is still 6)" },
       ],[
-        { id:"salvager",        name:"Salvager",         desc:"Receive 1 additional gem from scenarios" },
-        { id:"puppet_master",   name:"Puppet Master",    desc:"Give another player a public quest as their personal quest once after each scenario" },
+        { id:"salvager",        name:"Salvager",         desc:"Receive 1 additional gem from scenarios." },
+        { id:"composure",       name:"Composure",        desc:"You may reroll 1 die in the interwar phase (not injury rolls)." },
         { id:"inside_track",    name:"Inside Track",     desc:"Look at an additional card at the quest board" },
         { id:"second_chance",   name:"Second Chance",    desc:"Reroll any 1 die between scenarios (not injury rolls)" },
-        { id:"silver_tongue",   name:"Silver Tongue",    desc:"Gain +1 influence when completing a quest involving trading or negotiation" },
+        { id:"silver_tongue",   name:"Silver Tongue",    desc:"When spreading a rumour, either add 2 to the target's rumour counter or remove 1 from any company's rumour counter." },
       ],[
         { id:"opportunist",     name:"Opportunist",      desc:"Discard any personal quest and draw a new one after each scenario" },
         { id:"decisive",        name:"Decisive",         desc:"You win all tiebreakers (not combat)" },
@@ -317,18 +321,17 @@ const TALENTS = {
         { id:"spellbreaker",    name:"Spellbreaker",     desc:"Magic effects against this character are halved. No spellcasters allowed in the company" },
         { id:"praise",          name:"Praise",           desc:"After each scenario, grant one other character 5 XP" },
         { id:"inspiring",       name:"Inspiring Presence",desc:"Characters starting their action within 5\" of the leader get +2\" movement this round" },
-        { id:"rallying_cry",    name:"Rallying Cry",     desc:"Once per scenario: if an ally is knocked out within 6\", immediately grant them 1 HP" },
+        { id:"command_presence",name:"Command Presence", desc:"Once per scenario, immediately after the leader's activation, the leader may activate a friendly character within 6\" out of turn order." },
       ],[
         { id:"battle_cry",      name:"Battle Cry",       desc:"Ability: All friendly characters within 6\" get +1 to all attack rolls until end of turn" },
-        { id:"archers_command", name:"Archer's Command", desc:"If no other characters carry melee weapons, receive +1 to all ranged attack rolls" },
+        { id:"ranged_focus",    name:"Ranged Focus",     desc:"All characters in the company receive +1 to ranged attack rolls. The leader may not equip melee weapons." },
         { id:"guide",           name:"Guide",            desc:"Call out to a character within 6\" to perform a free movement or attack action (doesn't use an action)" },
         { id:"look_to_skies",   name:"Look to the Skies",desc:"If no friendlies use ranged weapons, enemy ranged rolls against the company have −1 while the leader is alive" },
-        { id:"guardian",        name:"Guardian",         desc:"Take a hit in place of an ally within 3\" once per scenario. Move next to the protected character" },
         { id:"phalanx",         name:"Phalanx",          desc:"Ability: All characters within 4\" receive +2 armor until end of turn" },
       ],[
         { id:"squire",          name:"Squire",           desc:"Recruit a squire for free of the same race. Doesn't count towards maximum company size" },
         { id:"bandwagon",       name:"Bandwagon",        desc:"Company receives 1 influence per leader knockout. All lost if the leader is knocked out" },
-        { id:"for_glory",       name:"For Glory!",       desc:"Once per scenario, choose an ally to immediately perform a full additional turn" },
+        { id:"for_glory",       name:"On My Mark",       desc:"Once per scenario, choose an ally to immediately perform a full additional turn." },
         { id:"mentor",          name:"Mentor",           desc:"Friendly knockouts within 6\" of the leader grant 5 XP to that character" },
         { id:"charismatic",     name:"Charismatic",      desc:"Recruiting characters costs half price" },
       ],
@@ -661,14 +664,10 @@ body{
 
 /* ─── LAYOUT ─── */
 .layout{
-  display:grid;
-  grid-template-columns:1fr 320px;
-  gap:1.75rem;
-  align-items:start;
+  display:block;
   position:relative;
   z-index:1;
 }
-@media(max-width:820px){.layout{grid-template-columns:1fr;}}
 
 /* ─── ADD BUTTON ─── */
 .add-btn{
@@ -676,7 +675,6 @@ body{
   background:linear-gradient(135deg,var(--s3),var(--s4));
   border:1px dashed var(--border-l);
   border-radius:8px;
-  color:var(--gold-d);
   font-family:'Cinzel',serif;
   font-size:.78rem;
   text-transform:uppercase;
@@ -686,12 +684,25 @@ body{
   transition:all .2s;
   margin-bottom:1.25rem;
 }
-.add-btn:hover:not(:disabled){
-  border-color:var(--gold-d);
-  color:var(--gold);
-  background:linear-gradient(135deg,var(--s2),var(--s3));
-}
 .add-btn:disabled{opacity:.35;cursor:not-allowed;}
+.add-btn-members{
+  color:#4a8fc4;
+  border-color:#2a5a80;
+}
+.add-btn-members:hover:not(:disabled){
+  border-color:#5aafee;
+  color:#7acfff;
+  background:linear-gradient(135deg,rgba(42,90,128,.15),rgba(42,90,128,.05));
+}
+.add-btn-equip{
+  color:#4a9a5a;
+  border-color:#2a6a3a;
+}
+.add-btn-equip:hover:not(:disabled){
+  border-color:#5aca7a;
+  color:#7aee9a;
+  background:linear-gradient(135deg,rgba(42,106,58,.15),rgba(42,106,58,.05));
+}
 
 /* ─── EMPTY STATE ─── */
 .empty{
@@ -705,6 +716,9 @@ body{
 
 /* ─── MEMBER CARD ─── */
 .roster{display:flex;flex-direction:column;gap:.85rem;}
+.bottom-panel{margin-top:.85rem;}
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.4rem .6rem;}
+.roster-details-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.6rem;}
 
 @keyframes slideIn{
   from{opacity:0;transform:translateY(-6px);}
@@ -723,7 +737,7 @@ body{
 
 .mem-head{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   gap:.75rem;
   padding:.9rem 1.1rem;
   cursor:pointer;
@@ -761,26 +775,22 @@ body{
 .badge-aug{color:var(--gold);border-color:var(--gold-d);background:rgba(200,149,42,.08);}
 .badge-leader{color:#e0d060;border-color:#8a7a20;background:rgba(200,180,40,.08);}
 
-.mh-right{
-  display:flex;
-  align-items:center;
-  gap:.5rem;
-  flex-shrink:0;
-}
+.mh-right{display:flex;align-items:center;gap:.5rem;flex-shrink:0;}
+.stat-row{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;}
 .mem-stat{
   font-family:'Cinzel',serif;
-  font-size:.72rem;
+  font-size:.95rem;
   color:var(--parch-d);
   background:var(--surface);
   border:1px solid var(--border);
-  border-radius:4px;
-  padding:.2rem .45rem;
+  border-radius:5px;
+  padding:.35rem .65rem;
   white-space:nowrap;
 }
-.mem-hit{color:var(--txt-d);font-size:.68rem;}
+.mem-hit{color:var(--txt-d);font-size:.9rem;}
 .mem-hit.hit-good{color:#6a9a4a;border-color:rgba(106,154,74,.4);}
 .mem-hit.hit-bad{color:#c44c22;border-color:rgba(196,76,34,.4);}
-.mem-bulky-warn{color:#c44c22;font-size:.65rem;border-color:rgba(196,76,34,.4);}
+.mem-bulky-warn{color:#c44c22;font-size:.85rem;border-color:rgba(196,76,34,.4);}
 .sac-btn{background:rgba(100,30,30,.4);border:1px solid rgba(160,50,50,.5);color:#c06060;border-radius:4px;width:22px;height:22px;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
 .sac-btn:hover{background:rgba(160,50,50,.5);color:#e08080;border-color:#c06060;}
 .mem-cost{
@@ -988,7 +998,7 @@ body{
   font-style:italic;
 }
 
-.mh-controls{display:flex;align-items:center;gap:.75rem;margin-top:.4rem;flex-wrap:wrap;}
+.mh-controls{display:flex;align-items:center;gap:.5rem .75rem;margin-top:.4rem;flex-wrap:wrap;}
 .level-wrap{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;}
 .level-lbl{font-family:'Cinzel',serif;font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gold-d);white-space:nowrap;}
 .xp-level-badge{font-family:'Cinzel',serif;font-size:.72rem;font-weight:700;color:var(--gold-l);background:rgba(200,149,42,.12);border:1px solid var(--gold-d);border-radius:4px;padding:.1rem .4rem;white-space:nowrap;}
@@ -1001,27 +1011,27 @@ body{
 .xp-total{font-family:'Cinzel',serif;font-size:.6rem;color:var(--txt-d);white-space:nowrap;}
 .xp-cap-note{font-family:'Cinzel',serif;font-size:.58rem;color:var(--rust-l);font-style:italic;white-space:nowrap;}
 
-.leader-check-wrap{
-  display:flex;
-  align-items:center;
-  gap:.35rem;
-  cursor:pointer;
-  padding:.2rem .5rem;
-  border-radius:4px;
-  border:1px solid transparent;
-  transition:border-color .15s,background .15s;
+.leader-badge-btn{
+  background:none;border:1px solid var(--border-l);
+  color:var(--txt-d);cursor:pointer;
+  font-family:'Cinzel',serif;font-size:.58rem;
+  text-transform:uppercase;letter-spacing:.1em;
+  padding:.15rem .4rem;border-radius:3px;
+  opacity:.4;transition:all .2s;
+  line-height:inherit;
 }
-.leader-check-wrap:hover{border-color:var(--border-l);background:rgba(255,255,255,.03);}
-.leader-check-wrap.is-leader{border-color:rgba(200,180,40,.3);background:rgba(200,180,40,.07);}
-.leader-check-wrap input{accent-color:var(--gold);width:13px;height:13px;cursor:pointer;}
-.leader-check-lbl{
-  font-family:'Cinzel',serif;
-  font-size:.6rem;
-  text-transform:uppercase;
-  letter-spacing:.1em;
-  color:var(--parch-dd);
+.leader-badge-btn:hover{opacity:.7;border-color:var(--gold-d);color:var(--parch);}
+.leader-badge-btn.is-leader{
+  opacity:1;color:#e0d060;border-color:#8a7a20;
+  background:rgba(200,180,40,.08);
+  text-shadow:0 0 8px rgba(220,180,40,.7);
+  box-shadow:0 0 6px rgba(220,180,40,.25);
 }
-.leader-check-wrap.is-leader .leader-check-lbl{color:#d0c050;}
+.leader-crown:hover{opacity:.55;filter:grayscale(.4);}
+.leader-crown.active{
+  opacity:1;filter:grayscale(0);
+  text-shadow:0 0 8px rgba(220,180,40,.9), 0 0 18px rgba(220,180,40,.45);
+}
 
 
 /* Restriction notice */
@@ -1091,7 +1101,7 @@ body{
 
 .race-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+  grid-template-columns:repeat(4,1fr);
   gap:.7rem;
   padding:1.1rem 1.5rem 1.5rem;
 }
@@ -1103,13 +1113,62 @@ body{
   cursor:pointer;
   transition:all .15s;
   position:relative;
+  overflow:hidden;
 }
 .race-card:hover:not(.disabled){
   border-color:var(--gold-d);
-  background:var(--s2);
-  transform:translateY(-2px);
 }
 .race-card.disabled{opacity:.38;cursor:not-allowed;}
+.rc-hover{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  opacity:0;
+  transition:opacity .15s;
+  pointer-events:none;
+  border-radius:7px;
+  overflow:hidden;
+}
+.race-card:hover:not(.disabled) .rc-hover{
+  opacity:1;
+  pointer-events:all;
+}
+@keyframes flash-green{0%{background:rgba(42,160,80,.7)}100%{background:rgba(20,20,20,.6)}}
+@keyframes flash-red{0%{background:rgba(160,42,42,.7)}100%{background:rgba(20,20,20,.6)}}
+.rc-add{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.6rem;
+  font-weight:bold;
+  color:var(--parch);
+  background:rgba(20,20,20,.6);
+  cursor:pointer;
+  transition:background .1s;
+}
+.rc-add:hover{ background:rgba(40,40,40,.75); }
+.rc-add.flash{ animation:flash-green .4s ease-out forwards; }
+.rc-remove{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.6rem;
+  font-weight:bold;
+  color:var(--parch);
+  background:rgba(20,20,20,.6);
+  cursor:pointer;
+  transition:background .1s;
+}
+.rc-remove:hover{ background:rgba(40,40,40,.75); }
+.rc-remove.flash{ animation:flash-red .4s ease-out forwards; }
+.rc-divider{
+  height:1px;
+  background:rgba(255,255,255,.15);
+  flex-shrink:0;
+}
 .rc-name{
   font-family:'Cinzel',serif;
   font-size:.9rem;
@@ -1177,7 +1236,8 @@ body{
 }
 
 /* ─── SIDEBAR ─── */
-.sidebar{
+/*.sidebar-removed*/
+.sidebar_unused{
   position:sticky;
   top:1.5rem;
   display:flex;
@@ -1355,6 +1415,10 @@ body{
 .tp-dot.used{background:var(--gold-d);border-color:var(--gold);}
 .tp-dot.available{border-color:var(--gold-d);}
 .tp-text{font-family:'Cinzel',serif;font-size:.65rem;color:var(--txt-d);margin-left:.25rem;}
+.tutor-picker{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;background:rgba(255,200,50,.06);border:1px solid var(--gold-d);border-radius:6px;padding:.55rem .9rem;}
+.tutor-label{font-family:'Cinzel',serif;font-size:.65rem;color:var(--gold);white-space:nowrap;}
+.tutor-select{background:var(--s2);border:1px solid var(--border-l);border-radius:4px;color:var(--txt);font-size:.8rem;padding:.3rem .5rem;flex:1;min-width:140px;}
+.tutor-select:focus{outline:none;border-color:var(--gold-d);}
 .cat-tabs{display:flex;gap:.4rem;flex-wrap:wrap;}
 .cat-tab{
   display:flex;align-items:center;gap:.35rem;
@@ -1524,22 +1588,36 @@ body{
 
 /* ─── PRINT MEDIA ─── */
 @media print {
-  .app, header, .topbar, .prog-wrap, .budget-warn, .layout > div:first-child,
-  .sidebar, .backdrop:not(.print-backdrop) { display:none !important; }
-  .print-backdrop { position:static !important; background:none !important; }
+  body > * { display:none !important; }
+  .print-backdrop { display:block !important; position:static !important; background:none !important; overflow:visible !important; }
   .print-modal {
-    width:100% !important; max-height:none !important; overflow:visible !important;
-    border:none !important; padding:1cm !important; background:white !important;
+    display:block !important;
+    position:static !important;
+    width:100% !important;
+    max-height:none !important;
+    height:auto !important;
+    overflow:visible !important;
+    border:none !important;
+    padding:1cm !important;
+    background:white !important;
     box-shadow:none !important;
+    color:#222 !important;
   }
+  .pm-grid { display:grid !important; grid-template-columns:repeat(2,1fr) !important; }
   .pm-header { border-bottom:2px solid #333 !important; }
   .pm-title { color:#222 !important; }
   .pm-sub, .pm-card-level, .pm-lbl { color:#555 !important; }
   .pm-val, .pm-faction, .pm-talent-name { color:#333 !important; }
-  .pm-card { background:#f8f6f2 !important; border:1px solid #ccc !important; break-inside:avoid; }
+  .pm-card {
+    background:#f8f6f2 !important;
+    border:1px solid #ccc !important;
+    break-inside:avoid;
+    page-break-inside:avoid;
+  }
   .pm-tag { background:#eee !important; border-color:#ccc !important; color:#555 !important; }
   .pm-footer, .pm-print-btn { display:none !important; }
   * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  @page { margin:1cm; }
 }
 
 /* ─── MARKET ─── */
@@ -1588,14 +1666,7 @@ body{
 }
 
 /* ─── IMAGES ─── */
-.portrait-wrap{width:46px;height:46px;flex-shrink:0;border-radius:6px;border:1px dashed var(--border-l);overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--surface);transition:border-color .2s;position:relative;}
-.portrait-wrap:hover{border-color:var(--gold-d);}
-.portrait-img{width:100%;height:100%;object-fit:cover;display:block;}
-.portrait-placeholder{font-size:1.1rem;opacity:.35;}
-.portrait-remove{position:absolute;top:1px;right:1px;background:rgba(0,0,0,.75);border:none;border-radius:50%;color:#ccc;font-size:.5rem;width:13px;height:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;opacity:0;transition:opacity .15s;}
-.portrait-wrap:hover .portrait-remove{opacity:1;}
 .file-input{display:none;}
-.pm-portrait{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--border-l);flex-shrink:0;}
 .pm-banner{width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border-l);margin:0 auto .8rem;display:block;}
 
 /* ─── ARMORY ─── */
@@ -1607,7 +1678,8 @@ body{
 .armory-housing-badge{font-family:'Cinzel',serif;font-size:.72rem;color:var(--gold);background:rgba(200,149,42,.1);border:1px solid var(--gold-d);border-radius:4px;padding:.25rem .6rem;display:inline-block;}
 .armory-section-tabs{display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap;}
 .ast-btn{font-family:'Cinzel',serif;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;padding:.35rem .75rem;border:1px solid var(--border-l);background:var(--surface);color:var(--txt-d);border-radius:5px;cursor:pointer;transition:all .15s;}
-.ast-btn.active{background:rgba(200,149,42,.12);border-color:var(--gold-d);color:var(--gold);}
+.ast-btn:hover:not(.active){border-color:var(--gold-d);color:var(--gold);background:rgba(200,149,42,.08);box-shadow:0 0 8px rgba(200,149,42,.2);}
+.ast-btn.active{background:rgba(200,149,42,.12);border-color:var(--gold-d);color:var(--gold);box-shadow:0 0 10px rgba(200,149,42,.25);}
 .inline-armory{margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);}
 .armory-list{display:flex;flex-direction:column;gap:.4rem;}
 .armory-item{display:flex;align-items:flex-start;gap:.6rem;padding:.5rem .65rem;background:var(--surface);border:1px solid var(--border);border-radius:7px;transition:all .15s;}
@@ -1718,7 +1790,6 @@ function newMember(race) {
     talents: {},
     titles: [],
     equipped: { melee: [], ranged: [], armor: null, items: [] },
-    portrait: null,
   };
 }
 
@@ -1744,10 +1815,12 @@ function itemHands(def) { return def?.hands ?? 1; }
 
 function armorVal(def) {
   if (!def) return 0;
-  if (def.id === "medium_armor") return 1;
-  if (def.id === "heavy_armor")  return 2;
-  if (def.id === "shield")       return 1;
   return def.armor ?? 0;
+}
+
+function armorMovePenalty(def) {
+  if (!def) return 0;
+  return def.movePenalty ?? 0;
 }
 
 // All stash uids currently equipped by a member
@@ -1809,14 +1882,32 @@ function getSpeed(m, stash) {
   if (hasMount) {
     let speed = 8;
     if (talentList.includes("giddy_up")) speed += 1;
-    return speed + '"';
+    // Armor slows mount for everyone including dwarves
+    const armorUidM = m.equipped?.armor;
+    if (armorUidM) {
+      const armorEntry = (stash ?? []).find(s => s.uid === armorUidM);
+      if (armorEntry) speed += armorMovePenalty(lookupDef(armorEntry.itemId));
+    }
+    return Math.max(1, speed) + '"';
   }
 
   const baseSpeed = raceOf(m.raceId)?.speed ?? 0;
   const isNimble = m.augmentId === "nimble" || talentList.includes("nimble");
   let speed = isNimble ? Math.ceil(baseSpeed) + 1 : baseSpeed;
   if (talentList.includes("runner_up")) speed += 1;
-  if (talentList.includes("meat_grinder")) speed -= 1;
+
+  // Armor movement penalty
+  const isDwarf = m.raceId === "dwarf";
+  if (!isDwarf) {
+    const armorUid = m.equipped?.armor;
+    if (armorUid) {
+      const armorEntry = (stash ?? []).find(s => s.uid === armorUid);
+      if (armorEntry) {
+        const armorDef = lookupDef(armorEntry.itemId);
+        speed += armorMovePenalty(armorDef);
+      }
+    }
+  }
   return Math.max(1, speed) + '"';
 }
 
@@ -1864,25 +1955,48 @@ function getHitBonus(m, stash, type, allMembers) {
   let bonus = 0;
   const talentList = Object.values(m.talents ?? {}).filter(Boolean);
 
-  // Bulky augment or Bulk talent: +1 melee attack rolls
-  if (type === "melee" && (m.augmentId === "bulky" || talentList.includes("bulk"))) bonus += 1;
+  // Bulky augment: +1 melee attack rolls
+  if (type === "melee" && m.augmentId === "bulky") bonus += 1;
 
   // Rage sacrifice: leader gets +2 to all attack rolls (flagged via m.rageSacBonus)
   if (m.isLeader && m.rageSacBonus) bonus += 2;
 
-  // From equipped items
+  // From equipped items — dagger penalty does not stack
+  let daggers = 0;
   allEquipped(m).forEach(uid => {
     const entry = (stash ?? []).find(s => s.uid === uid);
     if (!entry) return;
+    if (entry.itemId === "dagger") { daggers++; return; } // handle after loop
     const mod = WEAPON_HIT[entry.itemId];
     if (mod?.[type]) bonus += mod[type];
   });
+  if (type === "melee" && daggers > 0) bonus -= 1; // dagger penalty, never stacks
+
+  // Dual wielding two 1-handed melee weapons: -1 to melee attack rolls (unless Ambidextrous)
+  if (type === "melee" && !talentList.includes("ambidextrous")) {
+    const meleeUids = m.equipped?.melee ?? [];
+    if (meleeUids.length === 2) {
+      const hands = meleeUids.map(uid => {
+        const e = (stash ?? []).find(s => s.uid === uid);
+        return e ? itemHands(lookupDef(e.itemId)) : 0;
+      });
+      if (hands[0] === 1 && hands[1] === 1) bonus -= 1;
+    }
+  }
 
   // From reward items owned by this member
   (m.rewardItems ?? []).forEach(itemId => {
     const mod = WEAPON_HIT[itemId];
     if (mod?.[type]) bonus += mod[type];
   });
+
+  // Ranged Focus (leader talent): all company members get +1 ranged
+  if (type === "ranged" && allMembers) {
+    const leaderHasRangedFocus = allMembers.some(lm =>
+      lm.isLeader && Object.values(lm.talents ?? {}).includes("ranged_focus")
+    );
+    if (leaderHasRangedFocus) bonus += 1;
+  }
 
   // From talents
   talentList.forEach(talentId => {
@@ -1915,8 +2029,8 @@ function getHitBonus(m, stash, type, allMembers) {
 }
 
 // Returns "X+" string for the to-hit roll (base 4+, lower is better)
-function getHitStr(m, stash, type) {
-  const bonus = getHitBonus(m, stash, type);
+function getHitStr(m, stash, type, allMembers) {
+  const bonus = getHitBonus(m, stash, type, allMembers);
   const target = Math.max(2, Math.min(6, 4 - bonus));
   return target + "+";
 }
@@ -1986,8 +2100,9 @@ function getMinionCost(type, activeFaction) {
   return type.cost;
 }
 
-function getTalentPoints(member) {
-  const available = Math.max(0, getLevel(member.xp ?? 0) - 1) + (member.isLeader ? 1 : 0) + (member.bonusTalentPoints ?? 0);
+function getTalentPoints(member, allMembers) {
+  const tutorBonus = allMembers ? allMembers.filter(m => m.id !== member.id && m.tutorTarget === member.id && Object.values(m.talents ?? {}).includes("tutor")).length : 0;
+  const available = Math.max(0, getLevel(member.xp ?? 0) - 1) + (member.isLeader ? 1 : 0) + (member.bonusTalentPoints ?? 0) + tutorBonus;
   const spent = Object.values(member.talents ?? {}).filter(Boolean).length;
   return { available, spent, remaining: available - spent };
 }
@@ -2258,7 +2373,10 @@ function ArmoryPanel({ stash, setStash, remaining, members, update }) {
                       {item.range && `${item.range} · `}
                       {item.dmg && `DMG ${item.dmg} · `}
                       {item.bonus && `${item.bonus} · `}
+                      {item.armor > 0 && `+${item.armor} Armor · `}
+                      {item.movePenalty && item.movePenalty < 0 ? `${item.movePenalty}" movement · ` : ""}
                       {(item.effect ?? item.note ?? "").slice(0, 70) + ((item.effect ?? item.note ?? "").length > 70 ? "…" : "")}
+                      {item.raceRestrict && <span className="kw" style={{marginLeft:".3rem",color:"#a0c070"}}>{item.raceRestrict.charAt(0).toUpperCase()+item.raceRestrict.slice(1)} only</span>}
                       {item.keywords?.map(k => <span key={k} className="kw" style={{marginLeft:".3rem"}}>{k}</span>)}
                     </span>
                     <StashOwnershipRow itemId={item.id} src="shop" />
@@ -2301,7 +2419,7 @@ function ArmoryPanel({ stash, setStash, remaining, members, update }) {
                       {item.armor > 0 && `+${item.armor} Armor · `}
                       {(item.note ?? "").slice(0, 70) + ((item.note ?? "").length > 70 ? "…" : "")}
                     </span>
-                    {titleRequired && <div className="ai-title-req">Requires title: {titleRequired.name}</div>}
+                    {titleRequired?.name && <div className="ai-title-req">Requires title: {titleRequired.name}</div>}
                     <StashOwnershipRow itemId={item.id} src="shop" />
                   </div>
                   <ItemActions item={item} src="shop" canBuy={!cantAfford} isFree={false} />
@@ -2347,7 +2465,7 @@ function ArmoryPanel({ stash, setStash, remaining, members, update }) {
 }
 
 function EquipTab({ member, stash, members, update }) {
-  const race = raceOf(member.raceId);
+  const race = raceOf(member.raceId) ?? {};
   const eq = member.equipped ?? { melee: [], ranged: [], armor: null, items: [] };
 
   // Get def for a stash uid
@@ -2389,6 +2507,7 @@ function EquipTab({ member, stash, members, update }) {
     // Race restrictions
     if (slot === "armor" && race?.noArmor) return;
     if (slot === "armor" && def.heavy && race?.noHeavyArmor) return;
+    if (slot === "armor" && def.armorType === "heavy" && race?.noHeavyArmor) return;
     if (def.blackPowder && race?.noBlackPowder) return;
 
     let newEq = { ...eq };
@@ -2498,7 +2617,14 @@ function EquipTab({ member, stash, members, update }) {
                 if (rangedUsed + h > 2) canEquipNow = false;
               }
               if (def.blackPowder && race?.noBlackPowder) canEquipNow = false;
+              if (def.raceRestrict && member.raceId !== def.raceRestrict) canEquipNow = false;
+              if (def.requiresMount && !(member.equipped?.items ?? []).some(uid => { const e = (stash ?? []).find(s => s.uid === uid); return e?.itemId === "mount"; })) canEquipNow = false;
+              if (slot === "melee" && def.id !== "shield" && def.id !== "mirror_shield") {
+                const leaderHasRF = (members ?? []).some(lm => lm.isLeader && Object.values(lm.talents ?? {}).includes("ranged_focus"));
+                if (leaderHasRF) canEquipNow = false;
+              }
               if (slot === "armor" && def.heavy && race?.noHeavyArmor) canEquipNow = false;
+              if (slot === "armor" && def.armorType === "heavy" && race?.noHeavyArmor) canEquipNow = false;
               if (slot === "armor" && race?.noArmor) canEquipNow = false;
             }
 
@@ -2555,7 +2681,7 @@ function EquipTab({ member, stash, members, update }) {
 }
 
 function AugmentTab({ member, remaining, update }) {
-  const race = raceOf(member.raceId);
+  const race = raceOf(member.raceId) ?? {};
   return (
     <div>
       <p className="sec-note">A fighter may have at most one augment. Augments modify base stats and unlock abilities.</p>
@@ -2663,12 +2789,13 @@ function KeywordsPanel() {
   );
 }
 
-function TalentsTab({ member, update }) {
+function TalentsTab({ member, update, members }) {
   const availableCats = getAvailableCategories(member);
   const [selectedCat, setSelectedCat] = useState(availableCats[0] || "attributes");
-  const { available, spent, remaining: pointsLeft } = getTalentPoints(member);
+  const { available, spent, remaining: pointsLeft } = getTalentPoints(member, members);
   const cat = TALENTS[selectedCat];
   const talents = member.talents ?? {};
+  const hasTutor = Object.values(talents).includes("tutor");
 
   const getSelected = (catKey, tierIdx) => talents[`${catKey}_${tierIdx}`] ?? null;
   const hasPrevTier = (catKey, tierIdx) => tierIdx === 0 || !!getSelected(catKey, tierIdx - 1);
@@ -2685,7 +2812,9 @@ function TalentsTab({ member, update }) {
       });
       if (laterFilled) return;
     }
-    update(member.id, { talents: { ...talents, [key]: newVal } });
+    const extra = {};
+    if (talentId === "tutor" && newVal === null) extra.tutorTarget = null;
+    update(member.id, { talents: { ...talents, [key]: newVal }, ...extra });
   };
 
   return (
@@ -2699,6 +2828,20 @@ function TalentsTab({ member, update }) {
         </div>
         <span className="tp-text">{pointsLeft} remaining · {spent}/{available} used</span>
       </div>
+      {hasTutor && (
+        <div className="tutor-picker">
+          <span className="tutor-label">🎓 Tutor — grant 1 talent point to:</span>
+          <select
+            value={member.tutorTarget ?? ""}
+            onChange={e => update(member.id, { tutorTarget: e.target.value ? Number(e.target.value) : null })}
+            className="tutor-select">
+            <option value="">— choose member —</option>
+            {(members ?? []).filter(m => m.id !== member.id).map(m => (
+              <option key={m.id} value={m.id}>{m.name || m.raceId}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="cat-tabs">
         {availableCats.map(catKey => {
           const c = TALENTS[catKey];
@@ -2751,7 +2894,15 @@ function TalentsTab({ member, update }) {
 // ─── TITLES TAB ─── (Per-character: manage titles from rewards/talents)
 function TitlesTab({ member, update }) {
   const ownedTitles = member.titles ?? [];
-  const talentTitles = getTitles(member).map(t => t.id);
+  // Only talent-granted title ids (not manually added ones)
+  const talentTitles = Object.entries(member.talents ?? {}).map(([key, tid]) => {
+    if (!tid) return null;
+    const [catKey, tierStr] = key.split("_");
+    const talent = TALENTS[catKey]?.tiers[parseInt(tierStr)]?.find(t => t.id === tid);
+    if (!talent?.grantsTitle) return null;
+    const title = TITLES.find(t => t.name === talent.grantsTitle);
+    return title?.id ?? null;
+  }).filter(Boolean);
 
   const toggleTitle = (id) => {
     if (talentTitles.includes(id)) return; // talent-granted, can't manually remove
@@ -2814,7 +2965,7 @@ function PrintModal({ members, stash, minions, companyName, companyBanner, activ
         </div>
         <div className="pm-grid">
           {members.map(m => {
-            const race = raceOf(m.raceId);
+            const race = raceOf(m.raceId) ?? { name:"Unknown" };
             const aug = augOf(m.augmentId);
             const melee  = equippedNames(m, "melee");
             const ranged = equippedNames(m, "ranged");
@@ -2826,18 +2977,17 @@ function PrintModal({ members, stash, minions, companyName, companyBanner, activ
               const [catKey, tierStr] = key.split("_");
               const cat = TALENTS[catKey];
               const talent = cat?.tiers[parseInt(tierStr)]?.find(t => t.id === talentId);
-              return talent ? { cat: cat.name, tier: parseInt(tierStr) + 1, ...talent } : null;
+              return (talent && cat) ? { cat: cat.name, tier: parseInt(tierStr) + 1, ...talent } : null;
             }).filter(Boolean);
             return (
               <div key={m.id} className="pm-card">
                 <div className="pm-card-name">
-                  {m.portrait && <img src={m.portrait} className="pm-portrait" alt="" />}
-                  <span>{m.isLeader ? "👑 " : ""}{m.name}</span>
+<span>{m.isLeader ? "👑 " : ""}{m.name}</span>
                   <span className="pm-card-level">Lv {getLevel(m.xp)} · {m.xp} XP</span>
                 </div>
                 <div className="pm-row">
                   <span className="pm-lbl">Race</span>
-                  <span className="pm-val">{race.name}</span>
+                  <span className="pm-val">{race?.name ?? "Unknown"}</span>
                   {aug && <><span className="pm-lbl" style={{marginLeft:'.5rem'}}>Augment</span><span className="pm-val">{aug.name}</span></>}
                 </div>
                 <div className="pm-row">
@@ -2872,9 +3022,10 @@ function PrintModal({ members, stash, minions, companyName, companyBanner, activ
             <div className="pm-sub" style={{textAlign:'left',marginBottom:'.75rem'}}>Minions</div>
             {minions.map(mn => {
               const type = MINION_TYPES.find(t => t.id === mn.typeId);
+              if (!type) return null;
               return (
                 <div key={mn.id} className="pm-minion-row">
-                  <span>{type.icon} {mn.name} <span style={{opacity:.6,fontSize:'.75rem'}}>({type.name})</span></span>
+                  <span>{type.icon} {type.name}</span>
                   <span style={{display:'flex',gap:'.5rem'}}>
                     <span className="pm-tag">♥ {type.hp}</span>
                     <span className="pm-tag">⚡ {type.speed}</span>
@@ -2895,7 +3046,53 @@ function PrintModal({ members, stash, minions, companyName, companyBanner, activ
 // ===================== MAIN APP =====================
 // ===================== MAIN APP =====================
 
-export default function App() {
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{padding:"2rem",color:"#f88",fontFamily:"monospace",background:"#1a0808",border:"1px solid #f44",borderRadius:"8px",margin:"1rem"}}>
+          <b>Error:</b> {this.state.error.message}<br/><br/>
+          <pre style={{fontSize:".75rem",whiteSpace:"pre-wrap",opacity:.8}}>{this.state.error.stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function RaceCard({ race, disabled, atMax, tooExpensive, full, onAdd, onRemove }) {
+  const [flash, setFlash] = useState(null);
+  const trigger = (type, fn) => {
+    fn();
+    setFlash(type);
+    setTimeout(() => setFlash(null), 400);
+  };
+  return (
+    <div className={`race-card ${disabled ? "disabled" : ""}`}>
+      <div className="rc-name">{race.name}</div>
+      <div className="rc-stats">
+        <span className="rc-stat">🪙 {race.cost}</span>
+        <span className="rc-stat">♥ {race.hp}</span>
+        <span className="rc-stat">⚡ {race.speed}"</span>
+      </div>
+      <div className="rc-special">{race.special}</div>
+      {atMax && <div className="rc-limit">⚠ Max {race.maxPercompany} per company</div>}
+      {!atMax && tooExpensive && <div className="rc-limit">⚠ Insufficient gold</div>}
+      {!atMax && !tooExpensive && full && <div className="rc-limit">⚠ Company is full</div>}
+      {!disabled && (
+        <div className="rc-hover">
+          <div className={"rc-add" + (flash === "add" ? " flash" : "")} onClick={() => trigger("add", onAdd)}>+</div>
+          <div className="rc-divider" />
+          <div className={"rc-remove" + (flash === "rem" ? " flash" : "")} onClick={() => trigger("rem", onRemove)}>−</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function App() {
   const [members, setMembers] = useState([]);
   const [stash, setStash] = useState([]); // Company inventory: { uid, itemId }[]
   const [minions, setMinions] = useState([]);
@@ -2904,6 +3101,8 @@ export default function App() {
   const [goldPool, setGoldPool] = useState(STARTING_GOLD);
   const [influence, setInfluence] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [recentlyAdded, setRecentlyAdded] = useState(0);
+  const [showEquip, setShowEquip] = useState(false);
   const [showMinionModal, setShowMinionModal] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -2941,7 +3140,7 @@ export default function App() {
     setMembers(prev => [...prev, m]);
     setExpandedId(m.id);
     setTabs(prev => ({ ...prev, [m.id]: "augment" }));
-    setShowModal(false);
+    setRecentlyAdded(prev => prev + 1);
   };
 
   const addMinion = (type) => {
@@ -2984,7 +3183,7 @@ export default function App() {
           it: (m.equipped?.items  ?? []).map(uid => stash.find(e => e.uid === uid)?.itemId).filter(Boolean),
         },
       })),
-      mn: minions.map(mn => ({ n: mn.name, t: mn.typeId, o: mn.ownerId })),
+      mn: minions.map(mn => ({ t: mn.typeId, o: mn.ownerId })),
     };
     return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
   };
@@ -3023,21 +3222,21 @@ export default function App() {
         talents: m.t ?? {},
         titles: m.ti ?? [],
         equipped: { melee, ranged, armor, items },
-        portrait: null,
-      };
+          };
     });
 
     const minions = (data.mn ?? []).map(mn => ({
       id: newId(), name: mn.n, typeId: mn.t, ownerId: mn.o ?? null,
     }));
 
+    const validMembers = members.filter(m => !!raceOf(m.raceId));
     return {
       companyName: data.n ?? "The Iron Company",
       companyBanner: null,
       goldPool: data.g ?? STARTING_GOLD,
       influence: data.inf ?? 0,
       stash: rawStash,
-      members,
+      members: validMembers,
       minions,
     };
   };
@@ -3059,9 +3258,9 @@ export default function App() {
     }
     lines.push("─".repeat(40));
     members.forEach(m => {
-      const race = raceOf(m.raceId);
+      const race = raceOf(m.raceId) ?? { name:"Unknown" };
       const aug = augOf(m.augmentId);
-      lines.push((m.isLeader ? "👑 " : "") + m.name + " (" + race.name + (aug ? " · " + aug.name : "") + ") — Lv" + getLevel(m.xp) + " · " + getHP(m) + " HP · " + getSpeed(m, stash) + " · 🛡" + getArmor(m, stash) + " · 🪙" + getMemberCost(m));
+      lines.push((m.isLeader ? "👑 " : "") + m.name + " (" + (race?.name ?? "Unknown") + (aug ? " · " + aug.name : "") + ") — Lv" + getLevel(m.xp) + " · " + getHP(m) + " HP · " + getSpeed(m, stash) + " · 🛡" + getArmor(m, stash) + " · 🪙" + getMemberCost(m));
       const meleNames = (m.equipped?.melee ?? []).map(uid => stash.find(e=>e.uid===uid)).filter(Boolean).map(e=>lookupDef(e.itemId)?.name).filter(Boolean);
       if (meleNames.length) lines.push("  Melee: " + meleNames.join(", "));
       const rangNames = (m.equipped?.ranged ?? []).map(uid => stash.find(e=>e.uid===uid)).filter(Boolean).map(e=>lookupDef(e.itemId)?.name).filter(Boolean);
@@ -3091,7 +3290,7 @@ export default function App() {
       lines.push("Minions:");
       minions.forEach(mn => {
         const type = MINION_TYPES.find(t => t.id === mn.typeId);
-        lines.push("  " + type.icon + " " + mn.name + " (" + type.name + ") — ♥" + type.hp + " ⚡" + type.speed);
+        if (type) lines.push("  " + type.icon + " " + type.name + " — ♥" + type.hp + " ⚡" + type.speed);
       });
     }
     lines.push("─".repeat(40));
@@ -3166,17 +3365,18 @@ export default function App() {
 
   return (
     <>
+      <ErrorBoundary>
       <style>{CSS}</style>
 
       {/* Race selection modal */}
       {showModal && (
-        <div className="backdrop" onClick={() => setShowModal(false)}>
+        <div className="backdrop" onClick={() => { setShowModal(false); setRecentlyAdded(0); }}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-hdr">
-              <h2>Recruit a Fighter</h2>
-              <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
+              <h2>Add Members</h2>
+              <button className="close-btn" onClick={() => { setShowModal(false); setRecentlyAdded(0); }}>✕</button>
             </div>
-            <div className="modal-sub">{members.length}/{maxSize} slots filled · 🪙 {remaining} gold remaining</div>
+            <div className="modal-sub">{members.length}/{maxSize} slots filled · 🪙 {remaining} gold remaining{recentlyAdded > 0 && <span style={{marginLeft:".75rem",color:"#7aee9a",fontWeight:"bold"}}>✓ {recentlyAdded} added this session</span>}</div>
             <div className="race-grid">
               {RACES.map(race => {
                 const atMax = race.maxPercompany && members.filter(m => m.raceId === race.id).length >= race.maxPercompany;
@@ -3184,18 +3384,12 @@ export default function App() {
                 const full = members.length >= maxSize;
                 const disabled = atMax || tooExpensive || full;
                 return (
-                  <div key={race.id} className={`race-card ${disabled ? "disabled" : ""}`} onClick={() => !disabled && addMember(race)}>
-                    <div className="rc-name">{race.name}</div>
-                    <div className="rc-stats">
-                      <span className="rc-stat">🪙 {race.cost}</span>
-                      <span className="rc-stat">♥ {race.hp}</span>
-                      <span className="rc-stat">⚡ {race.speed}"</span>
-                    </div>
-                    <div className="rc-special">{race.special}</div>
-                    {atMax && <div className="rc-limit">⚠ Max {race.maxPercompany} per company</div>}
-                    {!atMax && tooExpensive && <div className="rc-limit">⚠ Insufficient gold</div>}
-                    {!atMax && !tooExpensive && full && <div className="rc-limit">⚠ Company is full</div>}
-                  </div>
+                  <RaceCard key={race.id} race={race} disabled={disabled} atMax={atMax} tooExpensive={tooExpensive} full={full}
+                    onAdd={() => addMember(race)}
+                    onRemove={() => {
+                      const last = [...members].reverse().find(m => m.raceId === race.id);
+                      if (last) { setMembers(prev => prev.filter(m => m.id !== last.id)); setRecentlyAdded(prev => Math.max(0, prev - 1)); }
+                    }} />
                 );
               })}
             </div>
@@ -3263,6 +3457,20 @@ export default function App() {
       )}
 
       {/* Armory modal */}
+      {showEquip && (
+        <div className="backdrop" onClick={() => setShowEquip(false)}>
+          <div className="armory-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2>⚒ Equipment</h2>
+              <button className="close-btn" onClick={() => setShowEquip(false)}>✕</button>
+            </div>
+            <div className="armory-modal-sub">🪙 {remaining} gold remaining · Purchase items, spells and tomes for your company.</div>
+            {hasHousing && <div className="armory-housing-badge">🏠 Housing · Company size +2</div>}
+            <ArmoryPanel stash={stash} setStash={setStash} remaining={remaining} members={members} update={update} />
+          </div>
+        </div>
+      )}
+
       <div className="app">
         <header className="hdr">
           <h1>Brannigan</h1>
@@ -3319,7 +3527,7 @@ export default function App() {
         <div className="prog-wrap">
           <div className={`prog-fill ${pct > 100 ? "danger" : pct > 85 ? "warn" : ""}`} style={{ width: `${Math.min(pct,100)}%` }} />
         </div>
-        {overBudget && <div className="budget-warn">⚠ Over budget by 🪙 {Math.abs(remaining)} — sell items from Equipment to resolve.</div>}
+        {overBudget && <div className="budget-warn">⚠ Over budget by 🪙 {Math.abs(remaining)} — sell items from the Equipment panel to resolve.</div>}
 
         <div className="layout">
           {/* Main column */}
@@ -3328,21 +3536,23 @@ export default function App() {
             <FactionBanner members={members} />
 
             <div className="recruit-row">
-              <button className="add-btn" onClick={() => setShowModal(true)} disabled={members.length >= maxSize}>
-                + Recruit Fighter ({members.length}/{maxSize})
+              <button className="add-btn add-btn-members" onClick={() => setShowModal(true)} disabled={members.length >= maxSize}>
+                + Members ({members.length}/{maxSize})
               </button>
-
+              <button className="add-btn add-btn-equip" onClick={() => setShowEquip(true)}>
+                ⚒ Equipment {stash.length > 0 ? `(${stash.length})` : ""}
+              </button>
             </div>
 
             {members.length === 0 ? (
               <div className="empty">
                 <p>No fighters mustered.</p>
-                <p style={{ fontSize: ".85rem", marginTop: ".5rem" }}>Click "Recruit Fighter" to begin building your company.</p>
+                <p style={{ fontSize: ".85rem", marginTop: ".5rem" }}>Click "+ Members" to begin building your company.</p>
               </div>
             ) : (
               <div className="roster">
                 {members.map(member => {
-                  const race = raceOf(member.raceId);
+                  const race = raceOf(member.raceId) ?? { name:"?", special:"" };
                   const aug = augOf(member.augmentId);
                   const isOpen = expandedId === member.id;
                   const tab = getTab(member.id);
@@ -3354,22 +3564,18 @@ export default function App() {
                   return (
                     <div key={member.id} className={`member-card ${isOpen ? "open" : ""}`}>
                       <div className="mem-head" onClick={() => setExpandedId(isOpen ? null : member.id)}>
-                        {/* Portrait */}
-                        <div onClick={e => e.stopPropagation()}>
-                          <input type="file" accept="image/*" className="file-input" id={"portrait-" + member.id}
-                            onChange={e => { if (e.target.files[0]) readImg(e.target.files[0], img => update(member.id, { portrait: img })); e.target.value = ""; }} />
-                          <label htmlFor={"portrait-" + member.id} className="portrait-wrap" title="Upload portrait">
-                            {member.portrait
-                              ? <><img src={member.portrait} className="portrait-img" alt="" /><button className="portrait-remove" onClick={e => { e.preventDefault(); e.stopPropagation(); update(member.id, { portrait: null }); }}>✕</button></>
-                              : <span className="portrait-placeholder">🧍</span>}
-                          </label>
-                        </div>
+
                         <div className="mh-left">
                           <input className="mh-name" value={member.name} onChange={e => { e.stopPropagation(); update(member.id, { name: e.target.value }); }} onClick={e => e.stopPropagation()} placeholder="Name this fighter…" />
                           <div className="mh-badges">
-                            <span className="badge badge-race">{race.name}</span>
+                            <span className="badge badge-race">{race?.name ?? "?"}</span>
                             {aug && <span className="badge badge-aug">{aug.name}</span>}
-                            {member.isLeader && <span className="badge badge-leader">👑 Leader</span>}
+                            <button
+                              className={`badge leader-badge-btn ${member.isLeader ? "is-leader" : ""}`}
+                              title={member.isLeader ? "Remove as leader" : "Set as Company Leader"}
+                              onClick={e => { e.stopPropagation(); const b = !member.isLeader; setMembers(prev => prev.map(m => ({ ...m, isLeader: m.id === member.id ? b : b ? false : m.isLeader }))); }}>
+                              👑 Leader
+                            </button>
                             {getTitles(member).map(t => <span key={t.id} className="title-badge">{t.name}</span>)}
                           </div>
                           <div className="mh-controls" onClick={e => e.stopPropagation()}>
@@ -3393,40 +3599,31 @@ export default function App() {
                               <span className="xp-total">{member.xp}/{maxXp}</span>
                               {isUndeadCapped && <span className="xp-cap-note">Lv 5 cap</span>}
                             </div>
-                            <label className={`leader-check-wrap ${member.isLeader ? "is-leader" : ""}`}>
-                              <input type="checkbox" checked={member.isLeader}
-                                onChange={() => {
-                                  const becomingLeader = !member.isLeader;
-                                  setMembers(prev => prev.map(m => ({
-                                    ...m,
-                                    isLeader: m.id === member.id ? becomingLeader : becomingLeader ? false : m.isLeader,
-                                  })));
-                                }} />
-                              <span className="leader-check-lbl">Company Leader</span>
-                            </label>
+                          <div className="stat-row" onClick={e => e.stopPropagation()}>
+                            <span className="mem-stat">♥ {getHP(member)}</span>
+                            <span className="mem-stat">⚡ {getSpeed(member, stash)}</span>
+                            <span className="mem-stat">🛡 {getArmor(member, stash)}</span>
+                            {(() => {
+                              const isBulky = member.augmentId === "bulky" || Object.values(member.talents ?? {}).includes("bulk");
+                              const mBonus = getHitBonus(member, stash, "melee", members);
+                              const rBonus = getHitBonus(member, stash, "ranged", members);
+                              const mStr = getHitStr(member, stash, "melee", members);
+                              const rStr = getHitStr(member, stash, "ranged", members);
+                              const riseStr = getRiseAgainStr(member);
+                              const talentList = Object.values(member.talents ?? {}).filter(Boolean);
+                              const riseBonus = (talentList.includes("reise") ? 1 : 0) + (talentList.includes("mercy") ? 1 : 0);
+                              return (<>
+                                <span className={`mem-stat mem-hit ${mBonus > 0 ? "hit-good" : mBonus < 0 ? "hit-bad" : ""}`} title={`Melee to hit${mBonus !== 0 ? ` (${mBonus > 0 ? "+" : ""}${mBonus} bonus)` : ""}${(member.equipped?.melee ?? []).length === 2 ? " · Dual wield: attacks twice" : ""}`}>⚔ {mStr}</span>
+                                <span className={`mem-stat mem-hit ${rBonus > 0 ? "hit-good" : rBonus < 0 ? "hit-bad" : ""}`} title={`Ranged to hit${rBonus !== 0 ? ` (${rBonus > 0 ? "+" : ""}${rBonus} bonus)` : ""}`}>🏹 {rStr}</span>
+                                {isBulky && <span className="mem-stat mem-bulky-warn" title="Ranged attacks against this character get +1 to hit">🎯 Easy target</span>}
+                                {riseStr && <span className={`mem-stat mem-hit ${riseBonus > 0 ? "hit-good" : ""}`} title={`Rise Again roll${riseBonus > 0 ? ` (+${riseBonus} bonus)` : " (base)"}`}>💀 {riseStr}</span>}
+                                {member.rageSacBonus && <span className="mem-stat hit-good" title="Rage sacrifice active: +2 to all attack rolls">⚔ +2 Rage</span>}
+                              </>);
+                            })()}
+                          </div>
                           </div>
                         </div>
                         <div className="mh-right">
-                          <span className="mem-stat">♥ {getHP(member)}</span>
-                          <span className="mem-stat">⚡ {getSpeed(member, stash)}</span>
-                          <span className="mem-stat">🛡 {getArmor(member, stash)}</span>
-                          {(() => {
-                            const isBulky = member.augmentId === "bulky" || Object.values(member.talents ?? {}).includes("bulk");
-                            const mBonus = getHitBonus(member, stash, "melee");
-                            const rBonus = getHitBonus(member, stash, "ranged");
-                            const mStr = getHitStr(member, stash, "melee");
-                            const rStr = getHitStr(member, stash, "ranged");
-                            const riseStr = getRiseAgainStr(member);
-                            const talentList = Object.values(member.talents ?? {}).filter(Boolean);
-                            const riseBonus = (talentList.includes("reise") ? 1 : 0) + (talentList.includes("mercy") ? 1 : 0);
-                            return (<>
-                              <span className={`mem-stat mem-hit ${mBonus > 0 ? "hit-good" : mBonus < 0 ? "hit-bad" : ""}`} title={`Melee to hit${mBonus !== 0 ? ` (${mBonus > 0 ? "+" : ""}${mBonus} bonus)` : ""}`}>⚔ {mStr}</span>
-                              <span className={`mem-stat mem-hit ${rBonus > 0 ? "hit-good" : rBonus < 0 ? "hit-bad" : ""}`} title={`Ranged to hit${rBonus !== 0 ? ` (${rBonus > 0 ? "+" : ""}${rBonus} bonus)` : ""}`}>🏹 {rStr}</span>
-                              {isBulky && <span className="mem-stat mem-bulky-warn" title="Ranged attacks against this character get +1 to hit">🎯 Easy target</span>}
-                              {riseStr && <span className={`mem-stat mem-hit ${riseBonus > 0 ? "hit-good" : ""}`} title={`Rise Again roll${riseBonus > 0 ? ` (+${riseBonus} bonus)` : " (base)"}`}>💀 {riseStr}</span>}
-                              {member.rageSacBonus && <span className="mem-stat hit-good" title="Rage sacrifice active: +2 to all attack rolls">⚔ +2 Rage</span>}
-                            </>);
-                          })()}
                           <button className="del-btn" onClick={e => { e.stopPropagation(); deleteMember(member.id); }} title="Dismiss">✕</button>
                           {member.raceId === "undead" && ["glory","greed","enthrall","rage_sac"].some(t => Object.values(member.talents ?? {}).includes(t)) && (
                             <button className="sac-btn" onClick={e => { e.stopPropagation(); sacrificeMember(member); }} title="Sacrifice this character">☠</button>
@@ -3437,7 +3634,7 @@ export default function App() {
 
                       {isOpen && (
                         <div className="mem-body">
-                          <div className="race-bar"><span className="race-bar-lbl">{race.name}:</span>{race.special}</div>
+                          {race?.name && <div className="race-bar"><span className="race-bar-lbl">{race.name}:</span>{race.special}</div>}
                           {(member.spells ?? []).length > 0 && (
                             <div className="race-bar" style={{flexWrap:"wrap",gap:".3rem"}}>
                               <span className="race-bar-lbl">Spells:</span>
@@ -3457,7 +3654,7 @@ export default function App() {
                           <div className="tab-content">
                             {tab === "augment" && <AugmentTab member={member} remaining={remaining} update={update} />}
                             {tab === "equip"   && <EquipTab   member={member} stash={stash} members={members} update={update} />}
-                            {tab === "talents" && <TalentsTab member={member} update={update} />}
+                            {tab === "talents" && <TalentsTab member={member} update={update} members={members} />}
                             {tab === "titles"  && <TitlesTab  member={member} update={update} />}
                           </div>
                         </div>
@@ -3475,13 +3672,13 @@ export default function App() {
                 <div className="minion-roster">
                   {minions.map(mn => {
                     const type = MINION_TYPES.find(t => t.id === mn.typeId);
+                    if (!type) return null;
                     return (
                       <div key={mn.id} className="minion-card">
                         <div className="mc-left">
                           <span className="mc-icon">{type.icon}</span>
                           <div>
-                            <input className="mc-name-input" value={mn.name} onChange={e => updateMinion(mn.id, { name: e.target.value })} onClick={e => e.stopPropagation()} />
-                            <div className="mc-type">{type.name}</div>
+                            <div className="mc-type" style={{fontSize:".9rem",color:"#c8a8e8",fontFamily:"'Cinzel',serif"}}>{type.name}</div>
                           </div>
                         </div>
                         <div className="mc-stats-row">
@@ -3506,89 +3703,80 @@ export default function App() {
             </div>
 
             {/* Inline Equipment Panel */}
-            <div className="inline-armory">
-              <div className="sec-head" style={{marginBottom:".5rem"}}>Equipment</div>
-              {hasHousing && <div className="armory-housing-badge" style={{marginBottom:".5rem"}}>🏠 Housing · Company size +2</div>}
-              <ArmoryPanel stash={stash} setStash={setStash} remaining={remaining} members={members} update={update} />
-            </div>
-          </div>
 
-          {/* Sidebar */}
-          <div className="sidebar">
-            <div className="sc">
-              <div className="sc-title">Company Inventory</div>
-              {stash.length === 0 ? (
-                <p className="sc-empty">No items purchased yet. Use the Equipment tabs below to buy gear.</p>
-              ) : (
-                <>
-                  {(() => {
-                    // Housing always shown; all other items only if unequipped
-                    const grouped = {};
-                    stash.forEach(entry => {
-                      const isHousing = entry.itemId === "housing";
-                      const owner = equippedBy(entry.uid, members);
-                      if (!isHousing && owner !== null) return; // skip equipped items
-                      if (!grouped[entry.itemId]) grouped[entry.itemId] = 0;
-                      grouped[entry.itemId]++;
-                    });
-                    const rows = Object.entries(grouped).map(([itemId, count]) => {
-                      const def = lookupDef(itemId);
-                      if (!def) return null;
-                      const isHousing = itemId === "housing";
-                      const slot = itemSlot(def);
-                      const slotIcon = isHousing ? "🏠" : slot === "melee" ? "⚔" : slot === "ranged" ? "🏹" : slot === "armor" ? "🛡" : "🎒";
-                      return (
-                        <div key={itemId} className="inv-row">
-                          <div className="inv-main">
-                            <span className="inv-icon">{slotIcon}</span>
-                            <div className="inv-info">
-                              <span className="inv-name">{def.name}</span>
-                              {count > 1 && <span className="inv-qty">×{count}</span>}
-                            </div>
+            {/* Company Inventory */}
+            {stash.length > 0 && (
+              <div className="sc bottom-panel">
+                <div className="sc-title">Company Inventory</div>
+                {(() => {
+                  const grouped = {};
+                  stash.forEach(entry => {
+                    const isHousing = entry.itemId === "housing";
+                    const owner = equippedBy(entry.uid, members);
+                    if (!isHousing && owner !== null) return;
+                    if (!grouped[entry.itemId]) grouped[entry.itemId] = 0;
+                    grouped[entry.itemId]++;
+                  });
+                  const rows = Object.entries(grouped).map(([itemId, count]) => {
+                    const def = lookupDef(itemId);
+                    if (!def) return null;
+                    const isHousing = itemId === "housing";
+                    const slot = itemSlot(def);
+                    const slotIcon = isHousing ? "🏠" : slot === "melee" ? "⚔" : slot === "ranged" ? "🏹" : slot === "armor" ? "🛡" : "🎒";
+                    return (
+                      <div key={itemId} className="inv-row">
+                        <div className="inv-main">
+                          <span className="inv-icon">{slotIcon}</span>
+                          <div className="inv-info">
+                            <span className="inv-name">{def.name}</span>
+                            {count > 1 && <span className="inv-qty">×{count}</span>}
                           </div>
-                          {isHousing && <span className="inv-company-tag">Company</span>}
                         </div>
-                      );
-                    }).filter(Boolean);
-
-                    if (rows.length === 0) return <p className="sc-empty">All items are equipped.</p>;
-                    return rows;
-                  })()}
-                  <div className="sc-total">
-                    <span className="sc-total-lbl">Items value</span>
-                    <span className="sc-total-val" style={{fontSize:'1rem'}}>🪙 {stashSpend}</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Roster details */}
-            {members.length > 0 && (
-              <div className="sc">
-                <div className="sc-title">Roster Details</div>
-                {members.map(m => {
-                  const r = raceOf(m.raceId);
-                  const melee  = (m.equipped?.melee ?? []).map(uid => stash.find(e=>e.uid===uid)).filter(Boolean).map(e=>lookupDef(e.itemId)?.name).filter(Boolean).join(", ") || "—";
-                  const ranged = (m.equipped?.ranged ?? []).map(uid => stash.find(e=>e.uid===uid)).filter(Boolean).map(e=>lookupDef(e.itemId)?.name).filter(Boolean).join(", ");
-                  const armorE = m.equipped?.armor ? stash.find(e=>e.uid===m.equipped.armor) : null;
-                  const armorName = armorE ? lookupDef(armorE.itemId)?.name : null;
+                        {isHousing && <span className="inv-company-tag">Company</span>}
+                      </div>
+                    );
+                  }).filter(Boolean);
                   return (
-                    <div key={m.id} className="detail-block">
-                      <div className="db-name">{m.isLeader ? "👑 " : ""}{m.name} <span style={{color:'var(--gold-d)',fontWeight:'normal'}}>Lv{getLevel(m.xp)}</span></div>
-                      <div className="db-line">♥ {getHP(m)} HP · ⚡ {getSpeed(m, stash)} · 🛡 {getArmor(m, stash)}</div>
-                      <div className="db-line">⚔ {melee}</div>
-                      {ranged && <div className="db-line">🏹 {ranged}</div>}
-                      {armorName && <div className="db-line">🛡 {armorName}</div>}
-                    </div>
+                    <>
+                      <div className="inv-grid">{rows.length === 0 ? <p className="sc-empty">All items are equipped.</p> : rows}</div>
+                      <div className="sc-total">
+                        <span className="sc-total-lbl">Items value</span>
+                        <span className="sc-total-val" style={{fontSize:'1rem'}}>🪙 {stashSpend}</span>
+                      </div>
+                    </>
                   );
-                })}
+                })()}
+              </div>
+            )}
+
+            {/* Roster Details */}
+            {members.length > 0 && (
+              <div className="sc bottom-panel">
+                <div className="sc-title">Roster Details</div>
+                <div className="roster-details-grid">
+                  {members.map(m => {
+                    const melee  = (m.equipped?.melee ?? []).map(uid => stash.find(e=>e.uid===uid)).filter(Boolean).map(e=>lookupDef(e.itemId)?.name).filter(Boolean).join(", ") || "—";
+                    const ranged = (m.equipped?.ranged ?? []).map(uid => stash.find(e=>e.uid===uid)).filter(Boolean).map(e=>lookupDef(e.itemId)?.name).filter(Boolean).join(", ");
+                    const armorE = m.equipped?.armor ? stash.find(e=>e.uid===m.equipped.armor) : null;
+                    const armorName = armorE ? lookupDef(armorE.itemId)?.name : null;
+                    return (
+                      <div key={m.id} className="detail-block">
+                        <div className="db-name">{m.isLeader ? "👑 " : ""}{m.name} <span style={{color:'var(--gold-d)',fontWeight:'normal'}}>Lv{getLevel(m.xp)}</span></div>
+                        <div className="db-line">♥ {getHP(m)} HP · ⚡ {getSpeed(m, stash)} · 🛡 {getArmor(m, stash)}</div>
+                        <div className="db-line">⚔ {melee}</div>
+                        {ranged && <div className="db-line">🏹 {ranged}</div>}
+                        {armorName && <div className="db-line">🛡 {armorName}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
             <KeywordsPanel />
 
             {(members.length > 0 || minions.length > 0) && (
-              <div className="export-btns">
+              <div className="export-btns" style={{marginTop:'1rem'}}>
                 <button className="export-btn" onClick={() => setShowPrint(true)}>🖨 Print</button>
                 <button className={`export-btn ${copied ? "copied" : ""}`} onClick={copyAsText}>{copied ? "✓ Copied!" : "📋 Text"}</button>
                 <button className={`export-btn ${codeCopied ? "copied" : ""}`} onClick={copyCode}>{codeCopied ? "✓ Copied!" : "🔑 Export Code"}</button>
@@ -3603,8 +3791,11 @@ export default function App() {
               </button>
             )}
           </div>
+
         </div>
       </div>
+      </ErrorBoundary>
     </>
   );
 }
+export default App;
