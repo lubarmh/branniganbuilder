@@ -214,7 +214,7 @@ const TALENTS = {
         { id:"touche",          name:"Touché",            desc:"After making a melee attack, this character may perform a free Disengage action." },
       ],[
         { id:"grapple",         name:"Grapple",           desc:"Use an action to grab an enemy in base contact. The grabbed character cannot use the Disengage action until this character moves away or is knocked out." },
-        { id:"precise_a",       name:"Precise",           desc:"+1 damage with all melee weapons" },
+        { id:"natural_bond",    name:"Natural Bond",      desc:"When this character performs an action, a minion within 4\" may replicate that type of action for free." },
         { id:"lucky",           name:"Lucky",             desc:"Once per round you may reroll one dice." },
         { id:"absorb",          name:"Absorb",            desc:"Spells that fail against this character heal them for 1d6" },
         { id:"eagle_eye",       name:"Eagle Eye",         desc:"Ignore cover when shooting ranged weapons" },
@@ -368,6 +368,98 @@ const TALENTS = {
   },
 };
 
+
+// ===================== INJURIES =====================
+const INJURIES = {
+  grievous: {
+    label: "Table 2 — Grievous Wound",
+    permanent: true,
+    entries: [
+      { id: "blood_infection",    name: "Blood Infection",       effect: "Character dies. Remove permanently.",                   statEffects: { dead: true } },
+      { id: "shattered_sword",    name: "Shattered Sword Arm",   effect: "-1 to all melee attack rolls permanently.",             statEffects: { meleeMod: -1 } },
+      { id: "crushed_leg",        name: "Crushed Leg",           effect: '-1" movement permanently.',                             statEffects: { speedMod: -1 } },
+      { id: "deep_chest_wound",   name: "Deep Chest Wound",      effect: "Maximum health reduced by 3 permanently.",              statEffects: { hpMod: -3 } },
+      { id: "brain_trauma",       name: "Brain Trauma",          effect: "Character can no longer cast spells.",                  statEffects: { noCast: true } },
+      { id: "blinded_one_eye",    name: "Blinded in One Eye",    effect: "-1 to all ranged attack rolls permanently.",            statEffects: { rangedMod: -1 } },
+    ]
+  },
+  serious: {
+    label: "Table 3 — Serious Injury",
+    permanent: false,
+    entries: [
+      { id: "broken_ribs",        name: "Broken Ribs",           effect: "Sits out the next scenario.",                          statEffects: { sitsOut: true } },
+      { id: "concussion",         name: "Concussion",            effect: "No spells or abilities next scenario.",                 statEffects: { noCast: true } },
+      { id: "deep_laceration",    name: "Deep Laceration",       effect: "Must visit the Terrace before next scenario or roll on Table 2.", statEffects: {} },
+      { id: "torn_muscle",        name: "Torn Muscle",           effect: '-2" movement next scenario.',                          statEffects: { speedMod: -2 } },
+      { id: "fractured_hand",     name: "Fractured Hand",        effect: "Cannot dual wield or use two-handed weapons next scenario.", statEffects: { noTwoHanded: true } },
+      { id: "fever",              name: "Fever",                 effect: "Must visit the Terrace before next scenario or roll on Table 2.", statEffects: {} },
+    ]
+  },
+  walking: {
+    label: "Table 4 — Walking Wounded",
+    permanent: false,
+    entries: [
+      { id: "bruised_ribs",       name: "Bruised Ribs",          effect: "-1 health next scenario.",                             statEffects: { hpMod: -1 } },
+      { id: "sprained_wrist",     name: "Sprained Wrist",        effect: "-1 to all attack rolls next scenario.",                statEffects: { meleeMod: -1, rangedMod: -1 } },
+      { id: "twisted_ankle",      name: "Twisted Ankle",         effect: '-1" movement next scenario.',                         statEffects: { speedMod: -1 } },
+      { id: "rattled",            name: "Rattled",               effect: "Cannot use abilities or talents next scenario.",       statEffects: {} },
+      { id: "shaken",             name: "Shaken",                effect: "-1 to all spellcasting rolls next scenario.",          statEffects: { spellMod: -1 } },
+      { id: "black_and_blue",     name: "Black and Blue",        effect: "Takes 1 damage at the start of each turn next scenario.", statEffects: {} },
+    ]
+  },
+  close: {
+    label: "Table 5 — Close Call",
+    permanent: false,
+    entries: [
+      { id: "winded",             name: "Winded",                effect: "Only 1 action on first activation next scenario.",     statEffects: {} },
+      { id: "bruised_ego",        name: "Bruised Ego",           effect: "Must charge nearest enemy on first activation next scenario.", statEffects: {} },
+      { id: "tender_wound",       name: "Tender Wound",          effect: "-1 to injury rolls if knocked out next scenario.",     statEffects: {} },
+      { id: "stiff_joints",       name: "Stiff Joints",          effect: "Must activate last among your characters next scenario.", statEffects: {} },
+      { id: "hard_lesson",        name: "Hard Lesson",           effect: "The character gains 5 xp.",                            statEffects: { xpGain: 5 } },
+      { id: "bloodied_melee",     name: "Bloodied but Unbowed (Melee)", effect: "+1 to melee attack rolls next scenario.",       statEffects: { meleeMod: +1 } },
+      { id: "bloodied_ranged",    name: "Bloodied but Unbowed (Ranged)", effect: "+1 to ranged attack rolls next scenario.",     statEffects: { rangedMod: +1 } },
+    ]
+  },
+};
+
+function getInjuryById(id) {
+  for (const table of Object.values(INJURIES)) {
+    const entry = table.entries.find(e => e.id === id);
+    if (entry) return { ...entry, permanent: table.permanent };
+  }
+  return null;
+}
+
+function getInjuryEffects(member) {
+  const result = { hpMod: 0, speedMod: 0, meleeMod: 0, rangedMod: 0, noCast: false, sitsOut: false, noTwoHanded: false };
+  (member.injuries ?? []).forEach(id => {
+    const inj = getInjuryById(id);
+    if (!inj) return;
+    const fx = inj.statEffects;
+    if (fx.hpMod)     result.hpMod     += fx.hpMod;
+    if (fx.speedMod)  result.speedMod  += fx.speedMod;
+    if (fx.meleeMod)  result.meleeMod  += fx.meleeMod;
+    if (fx.rangedMod) result.rangedMod += fx.rangedMod;
+    if (fx.noCast)    result.noCast     = true;
+    if (fx.sitsOut)   result.sitsOut    = true;
+    if (fx.noTwoHanded) result.noTwoHanded = true;
+  });
+  return result;
+}
+
+
+function GoldCoin({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" style={{display:"inline-block",verticalAlign:"middle",marginBottom:"1px"}} xmlns="http://www.w3.org/2000/svg">
+      <circle cx="8" cy="8" r="7.5" fill="#b8820a" />
+      <circle cx="8" cy="8" r="6.5" fill="#c8952a" />
+      <circle cx="8" cy="8" r="5.5" fill="#d4a030" stroke="#b8820a" strokeWidth="0.5" />
+      <text x="8" y="11.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#7a5010" fontFamily="serif">G</text>
+      <ellipse cx="6" cy="5.5" rx="1.5" ry="0.8" fill="rgba(255,230,120,0.35)" transform="rotate(-30 6 5.5)" />
+    </svg>
+  );
+}
+
 // ===================== CSS =====================
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
@@ -386,10 +478,10 @@ const CSS = `
   --rust:#9b3b1a;
   --rust-l:#c44c22;
   --parch:#d9c49a;
-  --parch-d:#a08860;
+  --parch-d:#b89e72;
   --parch-dd:#6a5a3a;
   --txt:#e0cca0;
-  --txt-d:#8a7254;
+  --txt-d:#a8906a;
   --border:#362a1c;
   --border-l:#4a3825;
   --shadow:rgba(0,0,0,.65);
@@ -398,12 +490,21 @@ const CSS = `
 }
 
 body{
-  background:var(--ink);
+  background:var(--ink) url('/background.webp') center/cover fixed;
   color:var(--txt);
   font-family:'Crimson Text',Georgia,serif;
   font-size:16px;
   min-height:100vh;
 }
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:rgba(10,3,8,.80);
+  pointer-events:none;
+  z-index:0;
+}
+.app{position:relative;z-index:1;}
 
 .app{
   max-width:1180px;
@@ -456,17 +557,17 @@ body{
 
 /* ─── TOPBAR ─── */
 .topbar{
-  background:linear-gradient(135deg,var(--s2),var(--s3));
+  background:linear-gradient(135deg,rgba(20,16,10,.6),rgba(26,20,14,.55));
   border:1px solid var(--border-l);
   border-radius:8px;
-  padding:.85rem 1.25rem;
+  padding:.55rem 1.25rem;
   margin-bottom:.6rem;
   box-shadow:0 4px 20px var(--shadow),inset 0 1px 0 rgba(200,149,42,.08);
   position:relative;
   z-index:1;
   display:flex;
   flex-direction:column;
-  gap:.75rem;
+  gap:.55rem;
 }
 .tb-row1{
   display:flex;
@@ -476,32 +577,33 @@ body{
 .tb-row2{
   display:flex;
   align-items:center;
-  gap:.6rem;
+  gap:1.75rem;
   flex-wrap:wrap;
+  justify-content:center;
 }
 .tb-name-input{
-  display:flex;
-  align-items:center;
-  gap:.5rem;
   flex:1;
-  min-width:0;
+  display:flex;
+  justify-content:center;
 }
 .tb-sigil{
   display:flex;
   align-items:center;
+  justify-content:center;
   gap:.5rem;
   flex-shrink:0;
 }
 .tb-sigil-img{
-  width:38px;height:38px;object-fit:cover;border-radius:5px;
+  width:52px;height:52px;object-fit:cover;border-radius:6px;
   border:1px solid var(--border-l);cursor:pointer;transition:border-color .2s;
 }
 .tb-sigil-img:hover{border-color:var(--gold-d);}
 .tb-sigil-placeholder{
-  width:38px;height:38px;border-radius:5px;
+  width:52px;height:52px;border-radius:6px;
   border:1px dashed var(--border-l);display:flex;align-items:center;
-  justify-content:center;font-size:1.1rem;cursor:pointer;
-  background:var(--surface);transition:border-color .2s;flex-shrink:0;
+  justify-content:center;font-size:1rem;cursor:pointer;
+  background:rgba(0,0,0,.2);transition:border-color .2s;flex-shrink:0;
+  color:var(--border-l);
 }
 .tb-sigil-placeholder:hover{border-color:var(--gold-d);}
 .tb-sigil-remove{
@@ -518,18 +620,20 @@ body{
   white-space:nowrap;
 }
 .tb-input{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:4px;
-  color:var(--parch);
-  font-family:'Cinzel',serif;
-  font-size:1.05rem;
-  padding:.35rem .7rem;
-  flex:1;
-  min-width:0;
+  background:transparent;
+  border:none;
+  border-bottom:1px solid var(--border-l);
+  border-radius:0;
+  color:var(--gold-l);
+  font-family:'Cinzel Decorative',serif;
+  font-size:1.1rem;
+  padding:.35rem .4rem;
+  width:100%;
+  text-align:center;
+  text-shadow:0 0 30px rgba(200,150,42,.3),0 2px 4px rgba(0,0,0,.8);
   transition:border-color .2s;
 }
-.tb-input:focus{outline:none;border-color:var(--gold-d);box-shadow:0 0 0 2px rgba(200,149,42,.1);}
+.tb-input:focus{outline:none;border-bottom-color:var(--gold-d);box-shadow:none;}
 
 .tb-stats{
   display:flex;
@@ -557,7 +661,7 @@ body{
   color:var(--txt-d);
   margin-top:.15rem;
 }
-.tb-div{width:1px;height:36px;background:var(--border-l);}
+.tb-div{display:none;}
 .influence-tracker{
   display:flex;flex-direction:column;align-items:center;gap:.15rem;
 }
@@ -672,7 +776,7 @@ body{
 /* ─── ADD BUTTON ─── */
 .add-btn{
   width:100%;
-  background:linear-gradient(135deg,var(--s3),var(--s4));
+  background:rgba(0,0,0,.15);
   border:1px dashed var(--border-l);
   border-radius:8px;
   font-family:'Cinzel',serif;
@@ -686,22 +790,30 @@ body{
 }
 .add-btn:disabled{opacity:.35;cursor:not-allowed;}
 .add-btn-members{
-  color:#4a8fc4;
-  border-color:#2a5a80;
+  color:var(--gold-l);
+  border-color:var(--gold-d);
+  font-weight:700;
+  font-size:.78rem;
+  letter-spacing:.06em;
 }
+
 .add-btn-members:hover:not(:disabled){
-  border-color:#5aafee;
-  color:#7acfff;
-  background:linear-gradient(135deg,rgba(42,90,128,.15),rgba(42,90,128,.05));
+  border-color:var(--gold);
+  color:var(--gold-l);
+  background:linear-gradient(135deg,rgba(200,149,42,.1),rgba(200,149,42,.04));
 }
 .add-btn-equip{
-  color:#4a9a5a;
-  border-color:#2a6a3a;
+  color:var(--gold-l);
+  border-color:var(--gold-d);
+  font-weight:700;
+  font-size:.78rem;
+  letter-spacing:.06em;
 }
+
 .add-btn-equip:hover:not(:disabled){
-  border-color:#5aca7a;
-  color:#7aee9a;
-  background:linear-gradient(135deg,rgba(42,106,58,.15),rgba(42,106,58,.05));
+  border-color:var(--gold);
+  color:var(--gold-l);
+  background:linear-gradient(135deg,rgba(200,149,42,.1),rgba(200,149,42,.04));
 }
 
 /* ─── EMPTY STATE ─── */
@@ -718,14 +830,14 @@ body{
 .roster{display:flex;flex-direction:column;gap:.85rem;}
 .bottom-panel{margin-top:.85rem;}
 .inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.4rem .6rem;}
-.roster-details-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.6rem;}
+.roster-details-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.4rem;}
 
 @keyframes slideIn{
   from{opacity:0;transform:translateY(-6px);}
   to{opacity:1;transform:translateY(0);}
 }
 .member-card{
-  background:linear-gradient(150deg,var(--s2),var(--s3));
+  background:linear-gradient(150deg,rgba(20,16,10,.55),rgba(26,20,14,.5));
   border:1px solid var(--border-l);
   border-radius:10px;
   overflow:hidden;
@@ -1101,7 +1213,7 @@ body{
 
 .race-grid{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
   gap:.7rem;
   padding:1.1rem 1.5rem 1.5rem;
 }
@@ -1206,22 +1318,27 @@ body{
 
 /* ─── KEYWORDS PANEL ─── */
 .kw-panel{
-  background:var(--surface);
+  background:rgba(14,11,8,.55);
   border:1px solid var(--border);
   border-radius:8px;
   overflow:hidden;
 }
 .kw-title{
   font-family:'Cinzel',serif;
-  font-size:.65rem;
+  font-size:.78rem;
+  font-weight:700;
   text-transform:uppercase;
-  letter-spacing:.14em;
-  color:var(--gold-d);
+  letter-spacing:.06em;
+  color:var(--gold-l);
   padding:.6rem .9rem;
   border-bottom:1px solid var(--border);
   background:var(--s2);
 }
 .kw-list{padding:.6rem .9rem;display:flex;flex-direction:column;gap:.45rem;}
+.kw-title-toggle{cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;}
+.kw-title-toggle:hover{color:var(--gold-l);}
+.kw-chevron{font-size:.6rem;transition:transform .2s;opacity:.7;}
+.kw-chevron.open{transform:rotate(180deg);}
 .kw-entry{}
 .kw-word{
   font-family:'Cinzel',serif;
@@ -1245,7 +1362,7 @@ body{
   gap:1.1rem;
 }
 .sc{
-  background:linear-gradient(150deg,var(--s2),var(--surface));
+  background:linear-gradient(150deg,rgba(20,16,10,.6),rgba(14,11,8,.55));
   border:1px solid var(--border-l);
   border-radius:10px;
   padding:1.1rem 1.25rem;
@@ -1253,10 +1370,11 @@ body{
 }
 .sc-title{
   font-family:'Cinzel',serif;
-  font-size:.68rem;
+  font-size:.78rem;
+  font-weight:700;
   text-transform:uppercase;
-  letter-spacing:.15em;
-  color:var(--gold-d);
+  letter-spacing:.06em;
+  color:var(--gold-l);
   padding-bottom:.65rem;
   margin-bottom:.65rem;
   border-bottom:1px solid var(--border);
@@ -1289,16 +1407,17 @@ body{
 .sc-total-val.danger{color:#d84040;}
 
 .detail-block{
-  padding:.6rem 0;
-  border-bottom:1px solid var(--border);
-  font-size:.8rem;
+  padding:.45rem .55rem;
+  background:rgba(0,0,0,.25);
+  border:1px solid var(--border);
+  border-radius:5px;
+  font-size:.72rem;
 }
-.detail-block:last-child{border-bottom:none;padding-bottom:0;}
-.db-name{font-family:'Cinzel',serif;font-size:.78rem;color:var(--parch-d);margin-bottom:.2rem;}
-.db-line{color:var(--txt-d);line-height:1.6;}
+.db-name{font-family:'Cinzel',serif;font-size:.73rem;color:var(--parch-d);margin-bottom:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.db-line{color:var(--txt);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 .disband-btn{
-  background:linear-gradient(135deg,rgba(100,15,15,.8),rgba(120,20,20,.8));
+  background:rgba(80,10,10,.2);
   border:1px solid var(--rust);
   border-radius:6px;
   color:#d06060;
@@ -1390,7 +1509,7 @@ body{
 .fb-tag.locked{color:var(--txt-d);border-color:var(--border);background:transparent;}
 .fb-bonus{
   font-size:.85rem;
-  color:var(--parch-d);
+  color:var(--parch);
   font-style:italic;
   line-height:1.45;
 }
@@ -1398,7 +1517,7 @@ body{
 .fb-hint{
   font-family:'Cinzel',serif;
   font-size:.62rem;
-  color:var(--txt-d);
+  color:var(--txt);
   margin-top:.3rem;
 }
 
@@ -1505,7 +1624,7 @@ body{
 .export-btns{display:flex;gap:.6rem;flex-wrap:wrap;}
 .export-btn{
   flex:1;min-width:100px;
-  background:linear-gradient(135deg,var(--s2),var(--surface));
+  background:rgba(0,0,0,.15);
   border:1px solid var(--border-l);border-radius:6px;
   color:var(--parch-d);font-family:'Cinzel',serif;font-size:.65rem;
   text-transform:uppercase;letter-spacing:.12em;padding:.6rem .5rem;
@@ -1674,6 +1793,7 @@ body{
 
 /* ─── ARMORY ─── */
 .recruit-row{display:flex;gap:.6rem;margin-bottom:.75rem;flex-wrap:wrap;}
+.add-btn{min-width:140px;}
 .armory-btn{font-family:'Cinzel',serif;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;padding:.55rem .9rem;border:1px solid var(--gold-d);background:rgba(200,149,42,.08);color:var(--gold);border-radius:6px;cursor:pointer;transition:all .15s;}
 .armory-btn:hover{background:rgba(200,149,42,.18);border-color:var(--gold);}
 .armory-modal{background:var(--s2);border:1px solid var(--border-l);border-radius:12px;padding:1.4rem;max-width:700px;width:92vw;max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:.75rem;}
@@ -1685,7 +1805,14 @@ body{
 .ast-btn.active{background:rgba(200,149,42,.12);border-color:var(--gold-d);color:var(--gold);box-shadow:0 0 10px rgba(200,149,42,.25);}
 .inline-armory{margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);}
 .armory-list{display:flex;flex-direction:column;gap:.4rem;}
-.armory-item{display:flex;align-items:flex-start;gap:.6rem;padding:.5rem .65rem;background:var(--surface);border:1px solid var(--border);border-radius:7px;transition:all .15s;}
+.armory-item{display:flex;align-items:flex-start;gap:.6rem;padding:.5rem .65rem;background:rgba(14,11,8,.45);border:1px solid var(--border);border-radius:7px;transition:all .15s;}
+.armory-item:not(.ai-blocked):hover{border-color:var(--gold-d);background:rgba(200,149,42,.08);box-shadow:0 0 8px rgba(200,149,42,.15);}
+.armory-item:not(.ai-blocked):active{animation:itemSpark .55s ease;}
+@keyframes itemSpark{
+  0%{box-shadow:0 0 0 rgba(200,149,42,0);border-color:var(--border);}
+  40%{box-shadow:0 0 18px rgba(200,149,42,.7);border-color:var(--gold-l);background:rgba(200,149,42,.2);}
+  100%{box-shadow:0 0 6px rgba(200,149,42,.1);border-color:var(--gold-d);}
+}
 .armory-item.ai-owned{border-color:var(--gold-d);background:rgba(200,149,42,.06);}
 .armory-item.ai-blocked{opacity:.45;}
 .ai-info{flex:1;min-width:0;}
@@ -1870,9 +1997,9 @@ function getHP(m) {
   const talentList = Object.values(m.talents ?? {}).filter(Boolean);
   const isBulky = m.augmentId === "bulky" || talentList.includes("bulk");
   const isNimble = m.augmentId === "nimble" || talentList.includes("nimble");
-  if (isBulky)  return base + 3;
-  if (isNimble) return Math.ceil(base / 2);
-  return base;
+  const injFx = getInjuryEffects(m);
+  let hp = isBulky ? base + 3 : isNimble ? Math.ceil(base / 2) : base;
+  return Math.max(1, hp + injFx.hpMod);
 }
 
 function getSpeed(m, stash) {
@@ -1911,6 +2038,7 @@ function getSpeed(m, stash) {
       }
     }
   }
+  speed += getInjuryEffects(m).speedMod;
   return Math.max(1, speed) + '"';
 }
 
@@ -1957,6 +2085,11 @@ const TALENT_HIT = {
 function getHitBonus(m, stash, type, allMembers) {
   let bonus = 0;
   const talentList = Object.values(m.talents ?? {}).filter(Boolean);
+
+  // Injury modifiers
+  const injFx = getInjuryEffects(m);
+  if (type === "melee")  bonus += injFx.meleeMod;
+  if (type === "ranged") bonus += injFx.rangedMod;
 
   // Bulky augment: +1 melee attack rolls
   if (type === "melee" && m.augmentId === "bulky") bonus += 1;
@@ -2089,9 +2222,8 @@ const LEVEL_THRESHOLDS = [5, 15, 30, 50, 70, 100];
 const UNDEAD_MAX_XP = 50;
 
 const MINION_TYPES = [
-  { id:"hound",  name:"Hound",        cost:10, speed:'6"', hp:3,  dmg:2,    hit:"5+", maxPerCompany:3, needsOwner:false, special:"Fetch. Max 3 per company.", icon:"🐕" },
-  { id:"troll",  name:"Troll / Giant", cost:50, speed:'6"', hp:20, dmg:6,    hit:"2+", maxPerCompany:1, needsOwner:true,  special:"Easy to hit (+1 to attack rolls against). Must stay within 4\" of designated owner. Max 1 per company.", icon:"👹" },
-  { id:"monkey", name:"Monkey",        cost:10, speed:'5"', hp:5,  dmg:null, hit:null, maxPerCompany:1, needsOwner:false, special:"Fetch. Movement not affected vertically. Ranged attack rolls against a monkey are reduced by 1. Max 1 per company.", icon:"🐒" },
+  { id:"hound",  name:"Pet",          cost:10, speed:'6"', hp:3,  dmg:2,    hit:"5+", maxPerCompany:3, needsOwner:false, special:"Fetch. Max 3 per company.", icon:"🐕" },
+  { id:"troll",  name:"Troll",         cost:50, speed:'6"', hp:20, dmg:6,    hit:"2+", maxPerCompany:1, needsOwner:true,  special:"Easy to hit (+1 to attack rolls against). Must stay within 4\" of designated owner. Max 1 per company.", icon:"👹" },
 ];
 
 function newMinion(type) {
@@ -2150,11 +2282,11 @@ function FactionBanner({ members }) {
 }
 
 // ─── ARMORY PANEL ─── (Company-level inventory: buy, market, receive rewards)
-function ArmoryPanel({ stash, setStash, remaining, members, update }) {
+function ArmoryPanel({ stash, setStash, remaining, members, update, minions, setMinions, activeFaction }) {
   const [filter, setFilter] = useState("all");
   const [mktFilter, setMktFilter] = useState("all");
   const [rwdFilter, setRwdFilter] = useState("all");
-  const [section, setSection] = useState("standard"); // "standard" | "spells" | "library" | "market" | "rewards"
+  const [section, setSection] = useState("standard"); // "standard" | "spells" | "library" | "market" | "rewards" | "minions"
   const [spellTarget, setSpellTarget] = useState(null); // member id for spell assignment
 
   const rarityColor = (r) => {
@@ -2206,11 +2338,11 @@ function ArmoryPanel({ stash, setStash, remaining, members, update }) {
     const isHousing = item.id === "housing";
     const housingOwned = isHousing && stash.some(e => e.itemId === "housing");
     if (housingOwned && src !== "reward") {
-      return <div className="ai-actions"><span className="ai-cost">🪙 {item.cost ?? 0}</span><span className="ai-owned-badge">✓ Company</span></div>;
+      return <div className="ai-actions"><span className="ai-cost"><GoldCoin /> {item.cost ?? 0}</span><span className="ai-owned-badge">✓ Company</span></div>;
     }
     return (
       <div className="ai-actions">
-        {!isFree && <span className="ai-cost">🪙 {item.cost ?? 0}</span>}
+        {!isFree && <span className="ai-cost"><GoldCoin /> {item.cost ?? 0}</span>}
         {!housingOwned && (
           <button
             className={isFree ? "ai-reward-btn" : "ai-buy-btn"}
@@ -2304,7 +2436,7 @@ function ArmoryPanel({ stash, setStash, remaining, members, update }) {
                   </span>
                 </div>
                 <div className="ai-actions">
-                  <span className="ai-cost">🪙 {sp.cost}</span>
+                  <span className="ai-cost"><GoldCoin /> {sp.cost}</span>
                   {eligible && (
                     <button
                       className={owned ? "ai-sell-btn" : "ai-buy-btn"}
@@ -2355,6 +2487,7 @@ function ArmoryPanel({ stash, setStash, remaining, members, update }) {
         <button className={"ast-btn" + (section === "library" ? " active" : "")} onClick={() => setSection("library")}>📚 Library</button>
         <button className={"ast-btn" + (section === "market" ? " active" : "")} onClick={() => setSection("market")}>🎲 Market</button>
         <button className={"ast-btn" + (section === "rewards" ? " active" : "")} onClick={() => setSection("rewards")}>🏆 Rewards</button>
+        <button className={"ast-btn" + (section === "minions" ? " active" : "")} onClick={() => setSection("minions")}>🐾 Minions</button>
       </div>
 
       {section === "standard" && (
@@ -2369,7 +2502,10 @@ function ArmoryPanel({ stash, setStash, remaining, members, update }) {
               const count = stashCountOf(item.id, "shop");
               const cantAfford = (item.cost ?? 0) > remaining;
               return (
-                <div key={item.id} className={"armory-item" + (count > 0 ? " ai-owned" : "") + (cantAfford && count === 0 ? " ai-blocked" : "")}>
+                <div key={item.id}
+                  className={"armory-item" + (count > 0 ? " ai-owned" : "") + (cantAfford && count === 0 ? " ai-blocked" : "")}
+                  style={{cursor: cantAfford && count === 0 ? "not-allowed" : "pointer"}}
+                  onClick={() => { if (!cantAfford) buyItem(item.id); }}>
                   <div className="ai-info">
                     <span className="ai-name">{item.name}</span>
                     <span className="ai-meta">
@@ -2384,7 +2520,12 @@ function ArmoryPanel({ stash, setStash, remaining, members, update }) {
                     </span>
                     <StashOwnershipRow itemId={item.id} src="shop" />
                   </div>
-                  <ItemActions item={item} src="shop" canBuy={!cantAfford} isFree={false} />
+                  <div className="ai-actions" onClick={e => e.stopPropagation()}>
+                    {count > 0 && <span className="ai-count" style={{fontSize:".7rem",color:"var(--gold)",marginRight:".3rem"}}>×{count}</span>}
+                    {!cantAfford && <span className="ai-cost"><GoldCoin /> {item.cost ?? 0}</span>}
+                    {cantAfford && count === 0 && <span className="ai-cost" style={{opacity:.4}}><GoldCoin /> {item.cost ?? 0}</span>}
+                    {count > 0 && <button className="ai-sell-btn" onClick={() => removeFromStash(item.id, "shop")} title="Remove from stash">−</button>}
+                  </div>
                 </div>
               );
             })}
@@ -2409,7 +2550,10 @@ function ArmoryPanel({ stash, setStash, remaining, members, update }) {
               const cantAfford = item.cost > remaining;
               const titleRequired = item.requiresTitle ? TITLES.find(t => t.id === item.requiresTitle) : null;
               return (
-                <div key={item.id} className={"armory-item" + (count > 0 ? " ai-owned" : "") + (cantAfford && count === 0 ? " ai-blocked" : "")}>
+                <div key={item.id}
+                  className={"armory-item" + (count > 0 ? " ai-owned" : "") + (cantAfford && count === 0 ? " ai-blocked" : "")}
+                  style={{cursor: cantAfford && count === 0 ? "not-allowed" : "pointer"}}
+                  onClick={() => { if (!cantAfford) buyItem(item.id); }}>
                   <div className="mc-rarity" style={{flexShrink:0,marginRight:".5rem"}}>
                     <span className="mc-rarity-num" style={{color: rarityColor(item.rarity)}}>{item.rarity}</span>
                     <span className="mc-rarity-lbl">Rarity</span>
@@ -2425,7 +2569,12 @@ function ArmoryPanel({ stash, setStash, remaining, members, update }) {
                     {titleRequired?.name && <div className="ai-title-req">Requires title: {titleRequired.name}</div>}
                     <StashOwnershipRow itemId={item.id} src="shop" />
                   </div>
-                  <ItemActions item={item} src="shop" canBuy={!cantAfford} isFree={false} />
+                  <div className="ai-actions" onClick={e => e.stopPropagation()}>
+                    {count > 0 && <span className="ai-count" style={{fontSize:".7rem",color:"var(--gold)",marginRight:".3rem"}}>×{count}</span>}
+                    {!cantAfford && <span className="ai-cost"><GoldCoin /> {item.cost}</span>}
+                    {cantAfford && count === 0 && <span className="ai-cost" style={{opacity:.4}}><GoldCoin /> {item.cost}</span>}
+                    {count > 0 && <button className="ai-sell-btn" onClick={() => removeFromStash(item.id, "shop")} title="Remove from stash">−</button>}
+                  </div>
                 </div>
               );
             })}
@@ -2445,7 +2594,10 @@ function ArmoryPanel({ stash, setStash, remaining, members, update }) {
             {visibleRwd.map(item => {
               const count = stashCountOf(item.id, "reward");
               return (
-                <div key={item.id} className={"armory-item" + (count > 0 ? " ai-owned" : "")}>
+                <div key={item.id}
+                  className={"armory-item" + (count > 0 ? " ai-owned" : "")}
+                  style={{cursor:"pointer"}}
+                  onClick={() => receiveReward(item.id)}>
                   <div className="ai-info">
                     <span className="ai-name">{item.name}</span>
                     <span className="ai-meta">
@@ -2456,12 +2608,83 @@ function ArmoryPanel({ stash, setStash, remaining, members, update }) {
                     </span>
                     <StashOwnershipRow itemId={item.id} src="reward" />
                   </div>
-                  <ItemActions item={item} src="reward" canBuy={true} isFree={true} />
+                  <div className="ai-actions" onClick={e => e.stopPropagation()}>
+                    {count > 0 && <span className="ai-count" style={{fontSize:".7rem",color:"var(--gold)",marginRight:".3rem"}}>×{count}</span>}
+                    <span className="ai-cost" style={{color:"var(--gold)"}}>Free</span>
+                    {count > 0 && <button className="ai-sell-btn" onClick={() => removeFromStash(item.id, "reward")} title="Remove from stash">−</button>}
+                  </div>
                 </div>
               );
             })}
           </div>
         </>
+      )}
+      {section === "minions" && (
+        <div>
+          {minions.length > 0 && (
+            <div className="minion-roster" style={{marginBottom:'.75rem'}}>
+              {minions.map(mn => {
+                const type = MINION_TYPES.find(t => t.id === mn.typeId);
+                if (!type) return null;
+                return (
+                  <div key={mn.id} className="minion-card">
+                    <div className="mc-left">
+                      <span className="mc-icon">{type.icon}</span>
+                      <div>
+                        <div className="mc-type" style={{fontSize:".9rem",color:"#c8a8e8",fontFamily:"'Cinzel',serif"}}>{type.name}</div>
+                      </div>
+                    </div>
+                    <div className="mc-stats-row">
+                      <span className="mem-stat">♥ {type.hp}</span>
+                      <span className="mem-stat">⚡ {type.speed}</span>
+                      {type.dmg && <span className="mem-stat">DMG {type.dmg}</span>}
+                      {type.hit && <span className="mem-stat">HIT {type.hit}</span>}
+                    </div>
+                    {type.needsOwner && (
+                      <select className="mc-owner-select" value={mn.ownerId ?? ""} onChange={e => setMinions(prev => prev.map(m => m.id === mn.id ? {...m, ownerId: e.target.value || null} : m))}>
+                        <option value="">No owner</option>
+                        {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      </select>
+                    )}
+                    <button className="del-btn" onClick={() => setMinions(prev => prev.filter(m => m.id !== mn.id))} title="Remove minion">✕</button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div className="minion-modal-grid">
+            {MINION_TYPES.map(type => {
+              const atMax = type.maxPerCompany && minions.filter(mn => mn.typeId === type.id).length >= type.maxPerCompany;
+              const cost = getMinionCost(type, activeFaction);
+              const tooExpensive = cost > remaining;
+              const disabled = atMax || tooExpensive;
+              const isDiscounted = cost !== type.cost;
+              return (
+                <div key={type.id} className={`minion-modal-card ${disabled ? "disabled" : ""}`}
+                  onClick={() => {
+                    if (disabled) return;
+                    if (tooExpensive || (type.maxPerCompany && minions.filter(mn => mn.typeId === type.id).length >= type.maxPerCompany)) return;
+                    setMinions(prev => [...prev, newMinion(type)]);
+                  }}>
+                  <span className="mm-icon">{type.icon}</span>
+                  <div className="mm-name">{type.name}</div>
+                  <div className="mm-stats">
+                    <span className="mm-stat">
+                      {isDiscounted ? <><s style={{opacity:.5}}><GoldCoin /> {type.cost}</s> <GoldCoin /> {cost} 🐀</> : <><GoldCoin /> {cost}</>}
+                    </span>
+                    <span className="mm-stat">♥ {type.hp}</span>
+                    <span className="mm-stat">⚡ {type.speed}</span>
+                    {type.dmg && <span className="mm-stat">DMG {type.dmg}</span>}
+                    {type.hit && <span className="mm-stat">HIT {type.hit}</span>}
+                  </div>
+                  <div className="mm-special">{type.special}</div>
+                  {atMax && <div className="mm-limit">⚠ Max {type.maxPerCompany} per company</div>}
+                  {!atMax && tooExpensive && <div className="mm-limit">⚠ Insufficient gold</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -2701,7 +2924,7 @@ function AugmentTab({ member, remaining, update }) {
                 if (blocked || (!active && !canAfford)) return;
                 update(member.id, { augmentId: active ? null : a.id, spells: [] });
               }}>
-              <div className="aug-name">{a.name} <span className="aug-cost">🪙 {a.cost}</span></div>
+              <div className="aug-name">{a.name} <span className="aug-cost"><GoldCoin /> {a.cost}</span></div>
               <div className="aug-eff">{a.effect}</div>
               {blocked && <div className="aug-blocked">Not available for this race.</div>}
             </div>
@@ -2777,17 +3000,23 @@ function SpellsTab({ member, stash, remaining, update }) {
 }
 
 function KeywordsPanel() {
+  const [open, setOpen] = useState(false);
   return (
     <div className="kw-panel">
-      <div className="kw-title">Keyword Reference</div>
-      <div className="kw-list">
-        {Object.entries(KEYWORDS).map(([word, def]) => (
-          <div key={word} className="kw-entry">
-            <span className="kw-word">{word}</span>
-            <div className="kw-def">{def}</div>
-          </div>
-        ))}
+      <div className="kw-title kw-title-toggle" onClick={() => setOpen(o => !o)}>
+        Keyword Reference
+        <span className={`kw-chevron ${open ? "open" : ""}`}>▼</span>
       </div>
+      {open && (
+        <div className="kw-list">
+          {Object.entries(KEYWORDS).map(([word, def]) => (
+            <div key={word} className="kw-entry">
+              <span className="kw-word">{word}</span>
+              <div className="kw-def">{def}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -2895,6 +3124,96 @@ function TalentsTab({ member, update, members }) {
 }
 
 // ─── TITLES TAB ─── (Per-character: manage titles from rewards/talents)
+function InjuriesTab({ member, update }) {
+  const injuries = member.injuries ?? [];
+
+  const addInjury = (id) => {
+    const inj = getInjuryById(id);
+    if (!inj) return;
+    // Apply XP gain immediately for Hard Lesson
+    if (inj.statEffects?.xpGain) {
+      update(member.id, { xp: (member.xp ?? 0) + inj.statEffects.xpGain });
+      return;
+    }
+    if (!injuries.includes(id)) {
+      update(member.id, { injuries: [...injuries, id] });
+    }
+  };
+
+  const removeInjury = (id) => {
+    update(member.id, { injuries: (member.injuries ?? []).filter(i => i !== id) });
+  };
+
+  const injFx = getInjuryEffects(member);
+  const hasStat = injFx.hpMod !== 0 || injFx.speedMod !== 0 || injFx.meleeMod !== 0 || injFx.rangedMod !== 0 || injFx.noCast || injFx.sitsOut;
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:".75rem",padding:".5rem 0"}}>
+      {injuries.length > 0 && (
+        <div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:".65rem",textTransform:"uppercase",letterSpacing:".12em",color:"var(--gold)",marginBottom:".4rem"}}>Active Injuries</div>
+          <div style={{display:"flex",flexDirection:"column",gap:".35rem"}}>
+            {injuries.map(id => {
+              const inj = getInjuryById(id);
+              if (!inj) return null;
+              return (
+                <div key={id} style={{display:"flex",alignItems:"flex-start",gap:".5rem",background:inj.permanent ? "rgba(155,59,26,.15)" : "rgba(200,149,42,.06)",border:`1px solid ${inj.permanent ? "var(--rust)" : "var(--border-l)"}`,borderRadius:"6px",padding:".4rem .6rem"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:".75rem",color:inj.permanent ? "#d06060" : "var(--parch)",display:"flex",alignItems:"center",gap:".4rem"}}>
+                      {inj.name}
+                      {inj.permanent && <span style={{fontSize:".6rem",color:"var(--rust-l)",border:"1px solid var(--rust)",borderRadius:"3px",padding:"0 .3rem"}}>Permanent</span>}
+                    </div>
+                    <div style={{fontSize:".72rem",color:"var(--txt-d)",marginTop:".15rem"}}>{inj.effect}</div>
+                  </div>
+                  <button onClick={() => removeInjury(id)} style={{background:"none",border:"none",color:"var(--txt-d)",cursor:"pointer",fontSize:".75rem",padding:".1rem .3rem",flexShrink:0}} title="Clear injury">✕</button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {hasStat && (
+        <div style={{background:"rgba(155,59,26,.1)",border:"1px solid var(--rust)",borderRadius:"6px",padding:".4rem .7rem",fontSize:".72rem",color:"#d06060",fontFamily:"'Cinzel',serif",display:"flex",flexWrap:"wrap",gap:".4rem .8rem"}}>
+          {injFx.hpMod !== 0 && <span>♥ HP {injFx.hpMod > 0 ? "+" : ""}{injFx.hpMod}</span>}
+          {injFx.speedMod !== 0 && <span>⚡ Move {injFx.speedMod > 0 ? "+" : ""}{injFx.speedMod}"</span>}
+          {injFx.meleeMod !== 0 && <span>⚔ Melee {injFx.meleeMod > 0 ? "+" : ""}{injFx.meleeMod}</span>}
+          {injFx.rangedMod !== 0 && <span>🏹 Ranged {injFx.rangedMod > 0 ? "+" : ""}{injFx.rangedMod}</span>}
+          {injFx.noCast && <span>✦ Cannot cast</span>}
+          {injFx.sitsOut && <span>✦ Sits out next scenario</span>}
+        </div>
+      )}
+
+      <div>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:".65rem",textTransform:"uppercase",letterSpacing:".12em",color:"var(--gold)",marginBottom:".4rem"}}>Add Injury</div>
+        {Object.entries(INJURIES).map(([key, table]) => (
+          <div key={key} style={{marginBottom:".5rem"}}>
+            <div style={{fontSize:".65rem",color:"var(--txt-d)",fontFamily:"'Cinzel',serif",marginBottom:".25rem"}}>{table.label}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:".2rem"}}>
+              {table.entries.map(entry => {
+                const active = injuries.includes(entry.id);
+                const isXp = entry.statEffects?.xpGain;
+                return (
+                  <div key={entry.id}
+                    className={`armory-item${active ? " ai-owned" : ""}`}
+                    style={{cursor: active && !isXp ? "default" : "pointer", opacity: active && !isXp ? .5 : 1}}
+                    onClick={() => !active && addInjury(entry.id)}>
+                    <div className="ai-info">
+                      <span className="ai-name" style={{color: table.permanent ? "#d06060" : "var(--parch)"}}>{entry.name}</span>
+                      <span className="ai-meta">{entry.effect}</span>
+                    </div>
+                    {active && !isXp && <span style={{fontSize:".65rem",color:"var(--gold)",flexShrink:0}}>✓</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function TitlesTab({ member, update }) {
   const ownedTitles = member.titles ?? [];
   // Only talent-granted title ids (not manually added ones)
@@ -2998,7 +3317,7 @@ function PrintModal({ members, stash, minions, companyName, companyBanner, activ
                   <span className="pm-tag">♥ {getHP(m)} HP</span>
                   <span className="pm-tag">⚡ {getSpeed(m, stash)}</span>
                   <span className="pm-tag">🛡 {getArmor(m, stash)}</span>
-                  <span className="pm-tag">🪙 {getMemberCost(m)}</span>
+                  <span className="pm-tag"><GoldCoin /> {getMemberCost(m)}</span>
                 </div>
                 {melee.length > 0 && <div className="pm-row"><span className="pm-lbl">Melee</span><span className="pm-val">{melee.join(", ")}</span></div>}
                 {ranged.length > 0 && <div className="pm-row"><span className="pm-lbl">Ranged</span><span className="pm-val">{ranged.join(", ")}</span></div>}
@@ -3076,7 +3395,7 @@ function RaceCard({ race, disabled, atMax, tooExpensive, full, onAdd, onRemove }
     <div className={`race-card ${disabled ? "disabled" : ""}`}>
       <div className="rc-name">{race.name}</div>
       <div className="rc-stats">
-        <span className="rc-stat">🪙 {race.cost}</span>
+        <span className="rc-stat"><GoldCoin /> {race.cost}</span>
         <span className="rc-stat">♥ {race.hp}</span>
         <span className="rc-stat">⚡ {race.speed}"</span>
       </div>
@@ -3099,14 +3418,13 @@ function App() {
   const [members, setMembers] = useState([]);
   const [stash, setStash] = useState([]); // Company inventory: { uid, itemId }[]
   const [minions, setMinions] = useState([]);
-  const [companyName, setcompanyName] = useState("The Iron Company");
+  const [companyName, setcompanyName] = useState("Brannigan Company Name");
   const [companyBanner, setCompanyBanner] = useState(null);
   const [goldPool, setGoldPool] = useState(STARTING_GOLD);
   const [influence, setInfluence] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [recentlyAdded, setRecentlyAdded] = useState(0);
   const [showEquip, setShowEquip] = useState(false);
-  const [showMinionModal, setShowMinionModal] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState("");
@@ -3234,7 +3552,7 @@ function App() {
 
     const validMembers = members.filter(m => !!raceOf(m.raceId));
     return {
-      companyName: data.n ?? "The Iron Company",
+      companyName: data.n ?? "Brannigan Company Name",
       companyBanner: null,
       goldPool: data.g ?? STARTING_GOLD,
       influence: data.inf ?? 0,
@@ -3263,7 +3581,7 @@ function App() {
     members.forEach(m => {
       const race = raceOf(m.raceId) ?? { name:"Unknown" };
       const aug = augOf(m.augmentId);
-      lines.push((m.isLeader ? "👑 " : "") + m.name + " (" + (race?.name ?? "Unknown") + (aug ? " · " + aug.name : "") + ") — Lv" + getLevel(m.xp) + " · " + getHP(m) + " HP · " + getSpeed(m, stash) + " · 🛡" + getArmor(m, stash) + " · 🪙" + getMemberCost(m));
+      lines.push((m.isLeader ? "👑 " : "") + m.name + " (" + (race?.name ?? "Unknown") + (aug ? " · " + aug.name : "") + ") — Lv" + getLevel(m.xp) + " · " + getHP(m) + " HP · " + getSpeed(m, stash) + " · 🛡" + getArmor(m, stash) + " · g" + getMemberCost(m));
       const meleNames = (m.equipped?.melee ?? []).map(uid => stash.find(e=>e.uid===uid)).filter(Boolean).map(e=>lookupDef(e.itemId)?.name).filter(Boolean);
       if (meleNames.length) lines.push("  Melee: " + meleNames.join(", "));
       const rangNames = (m.equipped?.ranged ?? []).map(uid => stash.find(e=>e.uid===uid)).filter(Boolean).map(e=>lookupDef(e.itemId)?.name).filter(Boolean);
@@ -3297,7 +3615,7 @@ function App() {
       });
     }
     lines.push("─".repeat(40));
-    lines.push("Total spent: 🪙" + totalSpent + " / " + goldPool);
+    lines.push("Total spent: g" + totalSpent + " / " + goldPool);
     navigator.clipboard.writeText(lines.join("\n")).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -3364,7 +3682,7 @@ function App() {
   const getTab = (id) => tabs[id] || "augment";
   const setTab = (id, t) => setTabs(prev => ({ ...prev, [id]: t }));
 
-  const TABS_FOR = (m) => ["augment", "equip", "talents", "titles"];
+  const TABS_FOR = (m) => ["equip", "augment", "talents", "injuries", "titles"];
 
   return (
     <>
@@ -3376,10 +3694,10 @@ function App() {
         <div className="backdrop" onClick={() => { setShowModal(false); setRecentlyAdded(0); }}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-hdr">
-              <h2>Add Members</h2>
+              <h2>+ Members</h2>
               <button className="close-btn" onClick={() => { setShowModal(false); setRecentlyAdded(0); }}>✕</button>
             </div>
-            <div className="modal-sub">{members.length}/{maxSize} slots filled · 🪙 {remaining} gold remaining{recentlyAdded > 0 && <span style={{marginLeft:".75rem",color:"#7aee9a",fontWeight:"bold"}}>✓ {recentlyAdded} added this session</span>}</div>
+            <div className="modal-sub">{members.length}/{maxSize} slots filled · <GoldCoin /> {remaining} gold remaining{recentlyAdded > 0 && <span style={{marginLeft:".75rem",color:"#7aee9a",fontWeight:"bold"}}>✓ {recentlyAdded} added this session</span>}</div>
             <div className="race-grid">
               {RACES.map(race => {
                 const atMax = race.maxPercompany && members.filter(m => m.raceId === race.id).length >= race.maxPercompany;
@@ -3401,45 +3719,6 @@ function App() {
       )}
 
       {/* Minion modal */}
-      {showMinionModal && (
-        <div className="backdrop" onClick={() => setShowMinionModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-hdr">
-              <h2>Add a Minion</h2>
-              <button className="close-btn" onClick={() => setShowMinionModal(false)}>✕</button>
-            </div>
-            <div className="modal-sub">Minions don't count towards your company size cap · 🪙 {remaining} gold remaining</div>
-            <div className="minion-modal-grid">
-              {MINION_TYPES.map(type => {
-                const atMax = type.maxPerCompany && minions.filter(mn => mn.typeId === type.id).length >= type.maxPerCompany;
-                const cost = getMinionCost(type, activeFaction);
-                const tooExpensive = cost > remaining;
-                const disabled = atMax || tooExpensive;
-                const isDiscounted = cost !== type.cost;
-                return (
-                  <div key={type.id} className={`minion-modal-card ${disabled ? "disabled" : ""}`} onClick={() => !disabled && addMinion(type)}>
-                    <span className="mm-icon">{type.icon}</span>
-                    <div className="mm-name">{type.name}</div>
-                    <div className="mm-stats">
-                      <span className="mm-stat">
-                        {isDiscounted ? <><s style={{opacity:.5}}>🪙 {type.cost}</s> 🪙 {cost} 🐀</> : <>🪙 {cost}</>}
-                      </span>
-                      <span className="mm-stat">♥ {type.hp}</span>
-                      <span className="mm-stat">⚡ {type.speed}</span>
-                      {type.dmg && <span className="mm-stat">DMG {type.dmg}</span>}
-                      {type.hit && <span className="mm-stat">HIT {type.hit}</span>}
-                    </div>
-                    <div className="mm-special">{type.special}</div>
-                    {atMax && <div className="mm-limit">⚠ Max {type.maxPerCompany} per company</div>}
-                    {!atMax && tooExpensive && <div className="mm-limit">⚠ Insufficient gold</div>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
       {showPrint && (
         <PrintModal members={members} stash={stash} minions={minions} companyName={companyName} companyBanner={companyBanner} activeFaction={activeFaction} onClose={() => setShowPrint(false)} />
       )}
@@ -3467,9 +3746,9 @@ function App() {
               <h2>⚒ Equipment</h2>
               <button className="close-btn" onClick={() => setShowEquip(false)}>✕</button>
             </div>
-            <div className="armory-modal-sub">🪙 {remaining} gold remaining · Purchase items, spells and tomes for your company.</div>
+            <div className="armory-modal-sub"><GoldCoin /> {remaining} gold remaining · Purchase items, spells and tomes for your company.</div>
             {hasHousing && <div className="armory-housing-badge">🏠 Housing · Company size +2</div>}
-            <ArmoryPanel stash={stash} setStash={setStash} remaining={remaining} members={members} update={update} />
+            <ArmoryPanel stash={stash} setStash={setStash} remaining={remaining} members={members} update={update} minions={minions} setMinions={setMinions} activeFaction={activeFaction} />
           </div>
         </div>
       )}
@@ -3477,27 +3756,14 @@ function App() {
       <div className="app">
         <header className="hdr">
           <h1>Brannigan</h1>
-          <p className="hdr-sub">Muster your company. Arm them well. March to glory — or ruin.</p>
+          <p className="hdr-sub">A delicate dance of strategy, deception and unyielding resolve.</p>
           <div className="hdr-rule">⚔ ✦ ⚔</div>
         </header>
 
         {/* Top bar */}
         <div className="topbar">
           <div className="tb-row1">
-            <input type="file" accept="image/*" className="file-input" id="banner-upload"
-              onChange={e => { if (e.target.files[0]) readImg(e.target.files[0], setCompanyBanner); e.target.value = ""; }} />
-            <div className="tb-sigil">
-              <label htmlFor="banner-upload" title="Upload company sigil">
-                {companyBanner
-                  ? <img src={companyBanner} className="tb-sigil-img" alt="Sigil" />
-                  : <div className="tb-sigil-placeholder">🏴</div>}
-              </label>
-              {companyBanner && (
-                <button className="tb-sigil-remove" onClick={() => setCompanyBanner(null)} title="Remove sigil">✕</button>
-              )}
-            </div>
             <div className="tb-name-input">
-              <span className="tb-lbl">⚔</span>
               <input className="tb-input" value={companyName} onChange={e => setcompanyName(e.target.value)} placeholder="Name your company…" />
             </div>
           </div>
@@ -3505,7 +3771,7 @@ function App() {
             <div className="influence-tracker">
               <div className="inf-controls">
                 <button className="inf-btn" onClick={() => setGoldPool(v => Math.max(totalSpent, v - 1))}>−</button>
-                <span className={`inf-val ${overBudget ? "danger" : ""}`}>🪙 {remaining}</span>
+                <span className={`inf-val ${overBudget ? "danger" : ""}`}><GoldCoin /> {remaining}</span>
                 <button className="inf-btn" onClick={() => setGoldPool(v => v + 1)}>+</button>
               </div>
               <span className="inf-lbl">Gold</span>
@@ -3530,7 +3796,7 @@ function App() {
         <div className="prog-wrap">
           <div className={`prog-fill ${pct > 100 ? "danger" : pct > 85 ? "warn" : ""}`} style={{ width: `${Math.min(pct,100)}%` }} />
         </div>
-        {overBudget && <div className="budget-warn">⚠ Over budget by 🪙 {Math.abs(remaining)} — sell items from the Equipment panel to resolve.</div>}
+        {overBudget && <div className="budget-warn">⚠ Over budget by <GoldCoin /> {Math.abs(remaining)} — sell items from the Equipment panel to resolve.</div>}
 
         <div className="layout">
           {/* Main column */}
@@ -3540,16 +3806,16 @@ function App() {
 
             <div className="recruit-row">
               <button className="add-btn add-btn-members" onClick={() => setShowModal(true)} disabled={members.length >= maxSize}>
-                + Members ({members.length}/{maxSize})
+                + Members
               </button>
               <button className="add-btn add-btn-equip" onClick={() => setShowEquip(true)}>
-                ⚒ Equipment {stash.length > 0 ? `(${stash.length})` : ""}
+                + Equipment
               </button>
             </div>
 
             {members.length === 0 ? (
               <div className="empty">
-                <p>No fighters mustered.</p>
+                <p>.</p>
                 <p style={{ fontSize: ".85rem", marginTop: ".5rem" }}>Click "+ Members" to begin building your company.</p>
               </div>
             ) : (
@@ -3650,7 +3916,7 @@ function App() {
                           <div className="tabs">
                             {memberTabs.map(t => (
                               <button key={t} className={`tab-btn ${tab === t ? "active" : ""}`} onClick={() => setTab(member.id, t)}>
-                                {t === "equip" ? "⚔ Equip" : t === "titles" ? "🏅 Titles" : t.charAt(0).toUpperCase() + t.slice(1)}
+                                {t === "equip" ? "Equip" : t === "titles" ? "Titles" : t === "injuries" ? "Injuries" : t.charAt(0).toUpperCase() + t.slice(1)}
                               </button>
                             ))}
                           </div>
@@ -3658,6 +3924,7 @@ function App() {
                             {tab === "augment" && <AugmentTab member={member} remaining={remaining} update={update} />}
                             {tab === "equip"   && <EquipTab   member={member} stash={stash} members={members} update={update} />}
                             {tab === "talents" && <TalentsTab member={member} update={update} members={members} />}
+                            {tab === "injuries" && <InjuriesTab member={member} update={update} />}
                             {tab === "titles"  && <TitlesTab  member={member} update={update} />}
                           </div>
                         </div>
@@ -3667,43 +3934,6 @@ function App() {
                 })}
               </div>
             )}
-
-            {/* Minions */}
-            <div className="minion-section">
-              <div className="sec-head">Minions</div>
-              {minions.length > 0 && (
-                <div className="minion-roster">
-                  {minions.map(mn => {
-                    const type = MINION_TYPES.find(t => t.id === mn.typeId);
-                    if (!type) return null;
-                    return (
-                      <div key={mn.id} className="minion-card">
-                        <div className="mc-left">
-                          <span className="mc-icon">{type.icon}</span>
-                          <div>
-                            <div className="mc-type" style={{fontSize:".9rem",color:"#c8a8e8",fontFamily:"'Cinzel',serif"}}>{type.name}</div>
-                          </div>
-                        </div>
-                        <div className="mc-stats-row">
-                          <span className="mem-stat">♥ {type.hp}</span>
-                          <span className="mem-stat">⚡ {type.speed}</span>
-                          {type.dmg && <span className="mem-stat">DMG {type.dmg}</span>}
-                          {type.hit && <span className="mem-stat">HIT {type.hit}</span>}
-                        </div>
-                        {type.needsOwner && (
-                          <select className="mc-owner-select" value={mn.ownerId ?? ""} onChange={e => updateMinion(mn.id, { ownerId: e.target.value || null })}>
-                            <option value="">No owner</option>
-                            {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                          </select>
-                        )}
-                        <button className="del-btn" onClick={() => deleteMinion(mn.id)} title="Remove minion">✕</button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <button className="add-minion-btn" onClick={() => setShowMinionModal(true)}>+ Add Minion</button>
-            </div>
 
             {/* Inline Equipment Panel */}
 
@@ -3744,7 +3974,7 @@ function App() {
                       <div className="inv-grid">{rows.length === 0 ? <p className="sc-empty">All items are equipped.</p> : rows}</div>
                       <div className="sc-total">
                         <span className="sc-total-lbl">Items value</span>
-                        <span className="sc-total-val" style={{fontSize:'1rem'}}>🪙 {stashSpend}</span>
+                        <span className="sc-total-val" style={{fontSize:'1rem'}}><GoldCoin /> {stashSpend}</span>
                       </div>
                     </>
                   );
@@ -3753,9 +3983,9 @@ function App() {
             )}
 
             {/* Roster Details */}
-            {members.length > 0 && (
+            {(members.length > 0 || minions.length > 0) && (
               <div className="sc bottom-panel">
-                <div className="sc-title">Roster Details</div>
+                <div className="sc-title">Company</div>
                 <div className="roster-details-grid">
                   {members.map(m => {
                     const melee  = (m.equipped?.melee ?? []).map(uid => stash.find(e=>e.uid===uid)).filter(Boolean).map(e=>lookupDef(e.itemId)?.name).filter(Boolean).join(", ") || "—";
@@ -3772,24 +4002,39 @@ function App() {
                       </div>
                     );
                   })}
+                  {minions.map(mn => {
+                    const type = MINION_TYPES.find(t => t.id === mn.typeId);
+                    if (!type) return null;
+                    const owner = mn.ownerId ? members.find(m => m.id === mn.ownerId) : null;
+                    return (
+                      <div key={mn.id} className="detail-block" style={{borderColor:'#3a2d4a'}}>
+                        <div className="db-name" style={{color:'#c8a8e8'}}>{type.icon} {type.name}</div>
+                        <div className="db-line">♥ {type.hp} HP · ⚡ {type.speed}{type.dmg ? ` · DMG ${type.dmg}` : ""}{type.hit ? ` · HIT ${type.hit}` : ""}</div>
+                        {owner && <div className="db-line">Owner: {owner.name}</div>}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             <KeywordsPanel />
 
-            {(members.length > 0 || minions.length > 0) && (
-              <div className="export-btns" style={{marginTop:'1rem'}}>
-                <button className="export-btn" onClick={() => setShowPrint(true)}>🖨 Print</button>
-                <button className={`export-btn ${copied ? "copied" : ""}`} onClick={copyAsText}>{copied ? "✓ Copied!" : "📋 Text"}</button>
-                <button className={`export-btn ${codeCopied ? "copied" : ""}`} onClick={copyCode}>{codeCopied ? "✓ Copied!" : "🔑 Export Code"}</button>
-              </div>
-            )}
-            <div className="export-btns" style={{marginTop:'.4rem'}}>
-              <button className="export-btn" onClick={() => setShowImport(true)}>📥 Import Code</button>
+            <div className="export-btns" style={{marginTop:'1rem'}}>
+              <button className={`export-btn ${codeCopied ? "copied" : ""}`} onClick={copyCode}>{codeCopied ? "✓ Exported!" : "Export"}</button>
+              <button className="export-btn" onClick={() => setShowImport(true)}>Import</button>
             </div>
             {(members.length > 0 || minions.length > 0) && (
-              <button className="disband-btn" onClick={() => { setMembers([]); setStash([]); setMinions([]); setExpandedId(null); }}>
+              <div className="export-btns" style={{marginTop:'.4rem'}}>
+                <button className="export-btn" onClick={() => setShowPrint(true)}>🖨 Print</button>
+              </div>
+            )}
+            {(members.length > 0 || minions.length > 0) && (
+              <button className="disband-btn" style={{marginTop:'1.5rem'}} onClick={() => {
+                if (window.confirm("Are you sure you want to disband your company? This cannot be undone.")) {
+                  setMembers([]); setStash([]); setMinions([]); setExpandedId(null);
+                }
+              }}>
                 ✕ Disband Company
               </button>
             )}
